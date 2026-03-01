@@ -42,6 +42,8 @@ public class User {
     private void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    @PreUpdate
     private void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }

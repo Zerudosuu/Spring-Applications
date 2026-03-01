@@ -15,15 +15,18 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    // Convert Entity → ResponseDTO
     private UserResponseDTO toResponseDTO(User user) {
         UserResponseDTO userResponseDTO = new UserResponseDTO();
         userResponseDTO.setId(user.getId());
+        userResponseDTO.setName(user.getName());
         userResponseDTO.setEmail(user.getEmail());
         userResponseDTO.setRole(user.getRole());
         userResponseDTO.setCreatedDate(user.getCreatedAt());
         return userResponseDTO;
     }
 
+    // Convert RequestDTO → Entity
     private User toEntity(UserRequestDTO userRequestDTO) {
         User user = new User();
         user.setName(userRequestDTO.getName());
@@ -33,7 +36,7 @@ public class UserService {
     }
 
     public UserResponseDTO createUser(UserRequestDTO dto) {
-        if (userRepository.existByEmail(dto.getEmail())) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
             throw new RuntimeException("Email already in use");
         }
 
@@ -46,10 +49,10 @@ public class UserService {
         return toResponseDTO(user);
     }
 
-    public UserResponseDTO updateUser(UserRequestDTO dto) {
-        User saved = userRepository.save(toEntity(dto));
-        return toResponseDTO(saved);
-    }
+//    public UserResponseDTO updateUser(UserRequestDTO dto) {
+//        User saved = userRepository.save(toEntity(dto));
+//        return toResponseDTO(saved);
+//    }
 
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll().stream().map(this::toResponseDTO).collect(Collectors.toList());
