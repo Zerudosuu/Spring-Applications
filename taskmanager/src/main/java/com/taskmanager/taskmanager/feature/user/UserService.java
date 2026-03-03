@@ -4,6 +4,7 @@ package com.taskmanager.taskmanager.feature.user;
 import com.taskmanager.taskmanager.feature.user.dto.UserRequestDTO;
 import com.taskmanager.taskmanager.feature.user.dto.UserResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // Convert Entity → ResponseDTO
     private UserResponseDTO toResponseDTO(User user) {
@@ -40,7 +42,9 @@ public class UserService {
             throw new RuntimeException("Email already in use");
         }
 
-        User saved =  userRepository.save(toEntity(dto));
+        User user = toEntity(dto);
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        User saved = userRepository.save(user);
         return toResponseDTO(saved);
     }
 
