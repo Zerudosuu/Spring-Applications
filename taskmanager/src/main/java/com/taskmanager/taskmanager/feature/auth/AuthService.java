@@ -5,6 +5,7 @@ import com.taskmanager.taskmanager.feature.auth.dto.LoginRequestDTO;
 import com.taskmanager.taskmanager.feature.auth.dto.LoginResponseDTO;
 import com.taskmanager.taskmanager.feature.user.User;
 import com.taskmanager.taskmanager.feature.user.UserRepository;
+import com.taskmanager.taskmanager.shared.exception.InvalidCredentialsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,7 @@ public class AuthService {
 
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
         User user = userRepository.findByEmail(loginRequestDTO.getEmail()).orElseThrow(
-                () -> new RuntimeException("Invalid email or password")
+                () -> new InvalidCredentialsException("Invalid email or password")
         );
 
         boolean passwordMatch = passwordEncoder.matches(
@@ -27,7 +28,7 @@ public class AuthService {
         );
 
         if (!passwordMatch) {
-            throw new RuntimeException("Invalid password");
+            throw new InvalidCredentialsException("Invalid password");
         }
 
         LoginResponseDTO loginResponseDTO = new LoginResponseDTO();

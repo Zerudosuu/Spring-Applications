@@ -6,6 +6,7 @@ import com.taskmanager.taskmanager.feature.user.User;
 import com.taskmanager.taskmanager.feature.user.UserRepository;
 import com.taskmanager.taskmanager.shared.enums.Priority;
 import com.taskmanager.taskmanager.shared.enums.TaskStatus;
+import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -47,14 +48,14 @@ public class TaskService {
     }
 
     public TaskResponseDTO createTask(TaskRequestDTO dto) {
-        User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Task saved = taskRepository.save(toEntity(dto, user));
 
         return toResponseDto(saved);
     }
 
     public TaskResponseDTO getTaskById(Long taskId) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new RuntimeException("Task not found"));
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         return toResponseDto(task);
     }
@@ -76,7 +77,7 @@ public class TaskService {
     }
 
     public TaskResponseDTO updateTask(Long taskId, TaskRequestDTO dto) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new RuntimeException("Task not found"));
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
@@ -88,7 +89,7 @@ public class TaskService {
     }
 
     public void deleteTasks(Long id) {
-        Task task = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found"));
+        Task task = taskRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         taskRepository.delete(task);
 

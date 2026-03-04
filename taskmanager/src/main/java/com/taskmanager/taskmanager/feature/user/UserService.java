@@ -3,6 +3,8 @@ package com.taskmanager.taskmanager.feature.user;
 
 import com.taskmanager.taskmanager.feature.user.dto.UserRequestDTO;
 import com.taskmanager.taskmanager.feature.user.dto.UserResponseDTO;
+import com.taskmanager.taskmanager.shared.exception.DuplicateResourceException;
+import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,7 +41,7 @@ public class UserService {
 
     public UserResponseDTO createUser(UserRequestDTO dto) {
         if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            throw new DuplicateResourceException("Email already in use");
         }
 
         User user = toEntity(dto);
@@ -49,7 +51,7 @@ public class UserService {
     }
 
     public UserResponseDTO getUserById(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return toResponseDTO(user);
     }
 
