@@ -16,6 +16,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
         User user = userRepository.findByEmail(loginRequestDTO.getEmail()).orElseThrow(
@@ -31,11 +32,14 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid password");
         }
 
+        String token = jwtUtil.generateToken(user.getEmail());
+
         LoginResponseDTO loginResponseDTO = new LoginResponseDTO();
         loginResponseDTO.setId(user.getId());
         loginResponseDTO.setName(user.getName());
         loginResponseDTO.setEmail(user.getEmail());
         loginResponseDTO.setRole(user.getRole());
+        loginResponseDTO.setToken(token);
         loginResponseDTO.setMessage("Login Successful");
         return loginResponseDTO;
     }

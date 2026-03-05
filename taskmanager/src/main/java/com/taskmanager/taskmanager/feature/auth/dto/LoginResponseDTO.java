@@ -1,7 +1,10 @@
 package com.taskmanager.taskmanager.feature.auth.dto;
 
 import com.taskmanager.taskmanager.shared.enums.Role;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -12,5 +15,6 @@ public class LoginResponseDTO {
     private String name;
     private String email;
     private Role role;
+    private String token;
     private String message;
 }

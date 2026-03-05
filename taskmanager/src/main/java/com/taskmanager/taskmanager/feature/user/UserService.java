@@ -55,10 +55,10 @@ public class UserService {
         return toResponseDTO(user);
     }
 
-//    public UserResponseDTO updateUser(UserRequestDTO dto) {
-//        User saved = userRepository.save(toEntity(dto));
-//        return toResponseDTO(saved);
-//    }
+    public UserResponseDTO updateUser(UserRequestDTO dto) {
+        User saved = userRepository.save(toEntity(dto));
+        return toResponseDTO(saved);
+    }
 
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll().stream().map(this::toResponseDTO).collect(Collectors.toList());
