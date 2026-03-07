@@ -32,7 +32,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         //Step 2- Check if the header exist and starts with Bearer
-        if (authHeader != null || authHeader.startsWith("Bearer ")) {
+        // Correct — if null OR doesn't start with Bearer, skip
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
