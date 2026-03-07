@@ -3,12 +3,10 @@ package com.taskmanager.taskmanager.feature.user;
 
 import com.taskmanager.taskmanager.feature.user.dto.UserRequestDTO;
 import com.taskmanager.taskmanager.feature.user.dto.UserResponseDTO;
-import com.taskmanager.taskmanager.shared.enums.Role;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,13 +19,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserResponseDTO> create(@RequestBody @Valid UserRequestDTO userRequestDTO) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(userRequestDTO));
-    }
-
-    @PutMapping("/{id}/role")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponseDTO> updateRole(@PathVariable Long id, @RequestParam Role role) {
-        return ResponseEntity.ok(userService.updateUserRole(id, role));
+        return  ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(userRequestDTO));
     }
 
     @GetMapping("/{id}")

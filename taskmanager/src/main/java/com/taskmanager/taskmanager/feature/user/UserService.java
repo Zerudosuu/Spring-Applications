@@ -3,7 +3,6 @@ package com.taskmanager.taskmanager.feature.user;
 
 import com.taskmanager.taskmanager.feature.user.dto.UserRequestDTO;
 import com.taskmanager.taskmanager.feature.user.dto.UserResponseDTO;
-import com.taskmanager.taskmanager.shared.enums.Role;
 import com.taskmanager.taskmanager.shared.exception.DuplicateResourceException;
 import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -49,12 +48,6 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         User saved = userRepository.save(user);
         return toResponseDTO(saved);
-    }
-
-    public UserResponseDTO updateUserRole(Long id, Role role) {
-        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        user.setRole(role);
-        return toResponseDTO(userRepository.save(user));
     }
 
     public UserResponseDTO getUserById(Long id) {
