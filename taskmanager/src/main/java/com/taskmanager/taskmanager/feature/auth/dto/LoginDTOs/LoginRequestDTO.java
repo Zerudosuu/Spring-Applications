@@ -1,4 +1,4 @@
-package com.taskmanager.taskmanager.feature.auth.dto;
+package com.taskmanager.taskmanager.feature.auth.dto.LoginDTOs;
 
 
 import jakarta.validation.constraints.Email;

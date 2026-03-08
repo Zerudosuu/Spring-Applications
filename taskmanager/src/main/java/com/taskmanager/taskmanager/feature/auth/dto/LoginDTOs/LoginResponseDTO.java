@@ -1,4 +1,4 @@
-package com.taskmanager.taskmanager.feature.auth.dto;
+package com.taskmanager.taskmanager.feature.auth.dto.LoginDTOs;
 
 import com.taskmanager.taskmanager.shared.enums.Role;
 import lombok.AllArgsConstructor;
@@ -15,6 +15,7 @@ public class LoginResponseDTO {
     private String name;
     private String email;
     private Role role;
-    private String token;
+    private String accessToken;
+    private String refreshToken;
     private String message;
 }
