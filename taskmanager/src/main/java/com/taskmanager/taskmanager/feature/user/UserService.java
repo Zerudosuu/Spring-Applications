@@ -70,4 +70,10 @@ public class UserService {
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll().stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
+
+    public UserResponseDTO deleteUser(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        userRepository.delete(user);
+        return toResponseDTO(user);
+    }
 }
