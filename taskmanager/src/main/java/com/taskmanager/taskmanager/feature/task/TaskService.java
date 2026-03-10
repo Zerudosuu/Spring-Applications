@@ -8,6 +8,8 @@ import com.taskmanager.taskmanager.shared.enums.Priority;
 import com.taskmanager.taskmanager.shared.enums.TaskStatus;
 import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -54,8 +56,13 @@ public class TaskService {
         return toResponseDto(saved);
     }
 
-    public TaskResponseDTO getTaskById(Long taskId) {
+    public TaskResponseDTO getTaskById(Long taskId, Authentication authentication) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        // ownership check — is this task owned by the requesting user?
+        if (!task.getUser().getEmail().equals(authentication.getName())) {
+            throw new AccessDeniedException("You do not have access to this task");
+        }
 
         return toResponseDto(task);
     }

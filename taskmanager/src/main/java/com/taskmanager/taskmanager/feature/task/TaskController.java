@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,9 +28,11 @@ public class TaskController {
         return ResponseEntity.status(HttpStatus.CREATED).body(taskService.createTask(taskRequestDTO));
     }
 
-    @GetMapping
-    public ResponseEntity<TaskResponseDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(taskService.getTaskById(id));
+    @GetMapping("/{id}")
+    public ResponseEntity<TaskResponseDTO> getById(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(taskService.getTaskById(id, authentication));
     }
 
     @GetMapping("/user/{userId}")

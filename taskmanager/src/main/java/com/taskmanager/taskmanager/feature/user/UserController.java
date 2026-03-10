@@ -36,7 +36,11 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponseDTO>> getAll() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
+
+    //I think missing is, getting the profile which I think the ID now.
+    //TODO: Fix the authorities and return base on the correct logic
 }
