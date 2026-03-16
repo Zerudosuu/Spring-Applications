@@ -1,7 +1,22 @@
+// Source - https://stackoverflow.com/a/78740694
+// Posted by DigitNerd
+// Retrieved 2026-03-15, License - CC BY-SA 4.0
+
+//tsconfig.json
 {
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
   "files": [],
   "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
   ]
 }
