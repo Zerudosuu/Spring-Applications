@@ -23,17 +23,34 @@ const axiosInstance = axios.create({
  * Response interceptor → runs after every incoming response
 
  *─── REQUEST INTERCEPTOR ─────────────────────────────────────────────────────
-* runs automatically before EVERY request your app makes
-* its job is to attach the JWT access token to the Authorization header
+  * runs automatically before EVERY request your app makes
+  * its job is to attach the JWT access token to the Authorization header
  */
 axiosInstance.interceptors.request.use(
+  /**
+   * @param config
+   *  config is the request configuration object
+   * it contains the URL, method, headers, body etc
+   * @returns
+   */
+
   (config) => {
+    // localStorage is the browser's built-in key-value storage
+    // we store the token here after login so it persists on page refresh
     const token = localStorage.getItem("accessToken");
+
+    // if a token exists attach it to the Authorization header
+    // Spring Boot's JwtAuthFilter reads this header on every request
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
+
+    // must return config so the request can continue
     return config;
   },
+
+  // if something goes wrong building the request
+  // Promise.reject(error) passes the error forward so it can be caught in the component that made the API call
   (error) => Promise.reject(error),
 );
 
