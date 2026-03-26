@@ -22,9 +22,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private UserMapper userMapper;
-
 
     // Convert Entity → ResponseDTO
     private UserResponseDTO toResponseDTO(User user) {

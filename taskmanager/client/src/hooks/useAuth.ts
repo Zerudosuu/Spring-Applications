@@ -13,7 +13,7 @@ const useAuth = () => {
 
   // ─── Register ────────────────────────────────────────────────────────────────
   const register = async (data: RegisterFormData) => {
-    const reponse = await axiosInstance.post("/auth/register", {
+    const reponse = await axiosInstance.post("/users", {
       name: data.name,
       email: data.email,
       password: data.password,

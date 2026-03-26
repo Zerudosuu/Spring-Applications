@@ -43,7 +43,9 @@ const useAuthStore = create<AuthState>((set) => ({
   // ─── INITIAL STATE ───────────────────────────────────────────────────────
   // we check localStorage on startup so state persists after page refresh
   // if accessToken exists in localStorage the user is still logged in
-  user: null,
+  user: localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user")!)
+    : null,
   accessToken: localStorage.getItem("accessToken"),
   refreshToken: localStorage.getItem("refreshToken"),
 
@@ -80,7 +82,7 @@ const useAuthStore = create<AuthState>((set) => ({
     });
   },
 
-  // called when we need to update user info without changing tokens
+  // called when we need to update user info without changing tok  ens
   // example: after fetching /api/users/me to get current user details
   setUser: (user) => set({ user }),
 }));
