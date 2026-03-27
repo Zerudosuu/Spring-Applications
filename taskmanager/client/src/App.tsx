@@ -5,14 +5,29 @@ import DashboardPage from "./pages/DashboardPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import NotFoundPage from "./pages/NotFoundPage";
 import Layout from "./components/layout/Layout";
+import GuestRoute from "./components/auth/GuestRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         {/** public routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/login"
+          element={
+            <GuestRoute>
+              <LoginPage />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <GuestRoute>
+              <RegisterPage />
+            </GuestRoute>
+          }
+        />
 
         {/* protected routes — wrapped with Layout for Navbar */}
         <Route
