@@ -37,6 +37,8 @@ const useTasks = () => {
   //errors state
   const [error, setError] = useState<string>("");
 
+  console.log("useTasks - user:", user);
+
   const getTasks = useCallback(async () => {
     if (!user) return; //no user, no tasks
 
@@ -45,9 +47,7 @@ const useTasks = () => {
 
     try {
       //GET /api/tasks?userId={userId}
-      const response = await axiosInstance.get<Task[]>(
-        `/api/tasks/user/${user.id}`,
-      );
+      const response = await axiosInstance.get<Task[]>(`tasks/user/${user.id}`);
       setTasks(response.data); //update local state with fetched tasks
     } catch (err) {
       setError("Failed to fetch tasks. Please try again.");
@@ -94,8 +94,8 @@ const useTasks = () => {
   // empty array [] means run once on mount only
   // similar to @PostConstruct in Spring Boot
   useEffect(() => {
-    getTasks();
-  }, [getTasks]);
+    if (user) getTasks();
+  }, [user, getTasks]);
 
   return {
     tasks,

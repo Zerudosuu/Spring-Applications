@@ -1,4 +1,4 @@
-import { type Task } from "../../hooks/useTasks";
+import type { Task } from "../../hooks/useTasks";
 import TaskCard from "./TaskCard";
 
 interface TaskListProps {

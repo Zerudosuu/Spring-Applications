@@ -22,19 +22,19 @@ const useAuth = () => {
     return reponse.data;
   };
 
-  // ─── Login ─────────────────────────────────────────────────────────────────
   const login = async (data: LoginFormData) => {
     const response = await axiosInstance.post("/auth/login", {
       email: data.email,
       password: data.password,
     });
 
-    const { user, accessToken, refreshToken } = response.data;
+    // check what your Spring Boot actually returns
+    console.log("Login response:", response.data);
 
-    // save auth data to store and localStorage
+    const { accessToken, refreshToken, message, ...user } = response.data;
+
+    // this saves user to Zustand AND localStorage
     setAuth(user, accessToken, refreshToken);
-
-    // redirect to dashboard after login
     navigate("/dashboard");
   };
 

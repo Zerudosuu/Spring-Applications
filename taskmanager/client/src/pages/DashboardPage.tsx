@@ -4,7 +4,10 @@ import TaskList from "../components/tasks/TaskList";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
+import useAuthStore from "@/store/authStore";
+
 function DashboardPage() {
+  const { user } = useAuthStore();
   const { tasks, isLoading, error, deleteTask } = useTasks();
 
   // selected task for editing — null means no task selected
@@ -82,6 +85,25 @@ function DashboardPage() {
       ) : (
         <TaskList tasks={tasks} onEdit={handleEdit} onDelete={handleDelete} />
       )}
+
+      {
+        /* TaskFormModal would go here, passing selectedTask and isFormOpen */
+        isFormOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">
+                {selectedTask ? "Edit Task" : "Create New Task"}
+              </h2>
+
+              {/* Task form fields would go here, pre-filled with selectedTask data if editing */}
+
+              <Button onClick={() => setIsFormOpen(false)} className="mt-4">
+                Close
+              </Button>
+            </div>
+          </div>
+        )
+      }
     </div>
   );
 }
