@@ -20,12 +20,8 @@ export const taskSchema = z.object({
 
   status: TaskStatus,
 
-  // dueDate is optional — coerce converts string input to Date object
-  // HTML date inputs return strings so we need to convert
-  dueDate: z.coerce
-    .date({ message: "Must be a valid date" })
-    .optional()
-    .nullable(),
+  // dueDate is optional; the form converts date input strings to Date via setValueAs
+  dueDate: z.date({ message: "Must be a valid date" }).optional().nullable(),
 });
 
 export type TaskData = z.infer<typeof taskSchema>;

@@ -1,42 +1,74 @@
 import { useState } from "react";
-import useTasks, { type Task } from "../hooks/useTasks";
-import TaskList from "../components/tasks/TaskList";
+import useTasks, { type Task, type TaskRequest } from "@/hooks/useTasks";
+import TaskList from "@/components/tasks/TaskList";
+import TaskForm from "@/components/tasks/TaskForm";
+import DeleteConfirm from "@/components/tasks/DeleteConfirm";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
-import useAuthStore from "@/store/authStore";
-
 function DashboardPage() {
-  const { user } = useAuthStore();
-  const { tasks, isLoading, error, deleteTask } = useTasks();
+  const { tasks, isLoading, error, createTask, updateTask, deleteTask } =
+    useTasks();
 
-  // selected task for editing — null means no task selected
+  // ─── FORM MODAL STATE ─────────────────────────────────────────
+  const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+
+  // selectedTask null = create mode, Task object = edit mode
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // controls task form modal visibility
-  const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+  // ─── DELETE MODAL STATE ───────────────────────────────────────
+  const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
   // ─── STATS ────────────────────────────────────────────────────
   const stats = {
-    total: tasks.length,
-    todo: tasks.filter((t) => t.status === "TODO").length,
-    inProgress: tasks.filter((t) => t.status === "IN_PROGRESS").length,
-    done: tasks.filter((t) => t.status === "DONE").length,
+    total: tasks?.length ?? 0,
+    todo: tasks?.filter((t) => t.status === "TODO").length ?? 0,
+    inProgress: tasks?.filter((t) => t.status === "IN_PROGRESS").length ?? 0,
+    done: tasks?.filter((t) => t.status === "DONE").length ?? 0,
   };
 
   // ─── HANDLERS ─────────────────────────────────────────────────
+
+  // open form in create mode
+  const handleCreateNew = () => {
+    setSelectedTask(null);
+    setIsFormOpen(true);
+  };
+
+  // open form in edit mode with task data
   const handleEdit = (task: Task) => {
     setSelectedTask(task);
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteTask(id);
+  // open delete confirmation dialog
+  const handleDeleteClick = (id: number) => {
+    const task = tasks.find((t) => t.id === id);
+    if (task) {
+      setTaskToDelete(task);
+      setIsDeleteOpen(true);
+    }
   };
 
-  const handleCreateNew = () => {
-    setSelectedTask(null); // null = create mode
-    setIsFormOpen(true);
+  // called when TaskForm submits
+  // decides whether to create or update based on selectedTask
+  const handleFormSubmit = async (data: TaskRequest) => {
+    if (selectedTask) {
+      // edit mode — update existing task
+      await updateTask(selectedTask.id, data);
+    } else {
+      // create mode — create new task
+      await createTask(data);
+    }
+  };
+
+  // called when delete is confirmed
+  const handleDeleteConfirm = async () => {
+    if (taskToDelete) {
+      await deleteTask(taskToDelete.id);
+      setTaskToDelete(null);
+    }
   };
 
   return (
@@ -83,27 +115,28 @@ function DashboardPage() {
           <p className="text-gray-400">Loading tasks...</p>
         </div>
       ) : (
-        <TaskList tasks={tasks} onEdit={handleEdit} onDelete={handleDelete} />
+        <TaskList
+          tasks={tasks}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+        />
       )}
 
-      {
-        /* TaskFormModal would go here, passing selectedTask and isFormOpen */
-        isFormOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">
-                {selectedTask ? "Edit Task" : "Create New Task"}
-              </h2>
+      {/* Task Form Modal */}
+      <TaskForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSubmit={handleFormSubmit}
+        task={selectedTask ?? undefined}
+      />
 
-              {/* Task form fields would go here, pre-filled with selectedTask data if editing */}
-
-              <Button onClick={() => setIsFormOpen(false)} className="mt-4">
-                Close
-              </Button>
-            </div>
-          </div>
-        )
-      }
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirm
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        taskTitle={taskToDelete?.title ?? ""}
+      />
     </div>
   );
 }

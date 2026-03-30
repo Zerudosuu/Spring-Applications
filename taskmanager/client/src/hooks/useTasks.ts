@@ -6,10 +6,10 @@ import useAuthStore from "@/store/authStore";
 export interface Task {
   id: number;
   title: string;
-  description: string;
+  description?: string;
   status: "TODO" | "IN_PROGRESS" | "DONE" | "CANCELLED";
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  dueDate: string; // ISO date string
+  dueDate?: string; // ISO date string
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
   userId: number;
