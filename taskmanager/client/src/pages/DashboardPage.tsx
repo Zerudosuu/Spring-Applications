@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useTasks, { type Task, type TaskRequest } from "@/hooks/useTasks";
 import TaskList from "@/components/tasks/TaskList";
 import TaskForm from "@/components/tasks/TaskForm";
+import TaskFilter, { type FilterState } from '@/components/tasks/TaskFilter';
 import DeleteConfirm from "@/components/tasks/DeleteConfirm";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -19,6 +20,30 @@ function DashboardPage() {
   // ─── DELETE MODAL STATE ───────────────────────────────────────
   const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
+  // ─── FILTER STATE ─────────────────────────────────────────────
+  // default values — ALL means no filter applied
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    status: "ALL",
+    priority: "ALL",
+  });
+
+  // ─── FILTERED TASKS ───────────────────────────────────────────
+    // useMemo recomputes filteredTasks only when tasks or filters change
+    // prevents unnecessary recalculation on every render
+    // similar to @Cacheable in Spring Boot
+
+    const filteredTasks = useMemo(() => { 
+      return tasks.filter((task) => { 
+
+        const matchesSearch = task.title.toLowerCase().includes(filters.search.toLowerCase());
+        const matchesStatus = filters.status === "ALL" || task.status === filters.status;
+        const matchesPriority = filters.priority === "ALL" || task.priority === filters.priority;
+        return matchesSearch && matchesStatus && matchesPriority;
+
+      });
+    }, [tasks, filters]);
 
   // ─── STATS ────────────────────────────────────────────────────
   const stats = {
@@ -70,74 +95,98 @@ function DashboardPage() {
       setTaskToDelete(null);
     }
   };
-
+// resets all filters back to default
+    const handleClearFilters = () => {
+        setFilters({
+            search: '',
+            status: 'ALL',
+            priority: 'ALL',
+        });
+    };
   return (
     <div>
-      {/* page header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">My Tasks</h1>
-        <Button onClick={handleCreateNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Task
-        </Button>
-      </div>
+            {/* page header */}
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">My Tasks</h1>
+                <Button onClick={handleCreateNew}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Task
+                </Button>
+            </div>
 
-      {/* stats bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg border p-4 text-center">
-          <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-          <p className="text-sm text-gray-500">Total</p>
-        </div>
-        <div className="bg-white rounded-lg border p-4 text-center">
-          <p className="text-2xl font-bold text-gray-500">{stats.todo}</p>
-          <p className="text-sm text-gray-500">To Do</p>
-        </div>
-        <div className="bg-white rounded-lg border p-4 text-center">
-          <p className="text-2xl font-bold text-blue-500">{stats.inProgress}</p>
-          <p className="text-sm text-gray-500">In Progress</p>
-        </div>
-        <div className="bg-white rounded-lg border p-4 text-center">
-          <p className="text-2xl font-bold text-green-500">{stats.done}</p>
-          <p className="text-sm text-gray-500">Done</p>
-        </div>
-      </div>
+            {/* stats bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white rounded-lg border p-4 text-center">
+                    <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+                    <p className="text-sm text-gray-500">Total</p>
+                </div>
+                <div className="bg-white rounded-lg border p-4 text-center">
+                    <p className="text-2xl font-bold text-gray-500">{stats.todo}</p>
+                    <p className="text-sm text-gray-500">To Do</p>
+                </div>
+                <div className="bg-white rounded-lg border p-4 text-center">
+                    <p className="text-2xl font-bold text-blue-500">{stats.inProgress}</p>
+                    <p className="text-sm text-gray-500">In Progress</p>
+                </div>
+                <div className="bg-white rounded-lg border p-4 text-center">
+                    <p className="text-2xl font-bold text-green-500">{stats.done}</p>
+                    <p className="text-sm text-gray-500">Done</p>
+                </div>
+            </div>
 
-      {/* error state */}
-      {error && (
-        <div className="p-4 text-red-500 bg-red-50 rounded-md mb-4">
-          {error}
+            {/* filter bar */}
+            <TaskFilter
+                filters={filters}
+                onFilterChange={setFilters}
+                onClear={handleClearFilters}
+            />
+
+            {/* error state */}
+            {error && (
+                <div className="p-4 text-red-500 bg-red-50 rounded-md mb-4">
+                    {error}
+                </div>
+            )}
+
+            {/* show how many results match the filter */}
+            {!isLoading && (
+                <p className="text-sm text-gray-400 mb-4">
+                    Showing {filteredTasks.length} of {tasks.length} tasks
+                </p>
+            )}
+
+            {/* loading state */}
+            {isLoading ? (
+                <div className="text-center py-16">
+                    <p className="text-gray-400">Loading tasks...</p>
+                </div>
+            ) : (
+                // pass filteredTasks not tasks
+                // so the list shows only matching tasks
+                <TaskList
+                    tasks={filteredTasks}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteClick}
+                />
+            )}
+
+            {/* Task Form Modal */}
+            <TaskForm
+                isOpen={isFormOpen}
+                onClose={() => setIsFormOpen(false)}
+                onSubmit={handleFormSubmit}
+                task={selectedTask}
+            />
+
+            {/**Hotdog */}
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirm
+                isOpen={isDeleteOpen}
+                onClose={() => setIsDeleteOpen(false)}
+                onConfirm={handleDeleteConfirm}
+                taskTitle={taskToDelete?.title ?? ''}
+            />
         </div>
-      )}
-
-      {/* loading state */}
-      {isLoading ? (
-        <div className="text-center py-16">
-          <p className="text-gray-400">Loading tasks...</p>
-        </div>
-      ) : (
-        <TaskList
-          tasks={tasks}
-          onEdit={handleEdit}
-          onDelete={handleDeleteClick}
-        />
-      )}
-
-      {/* Task Form Modal */}
-      <TaskForm
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        task={selectedTask ?? undefined}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirm
-        isOpen={isDeleteOpen}
-        onClose={() => setIsDeleteOpen(false)}
-        onConfirm={handleDeleteConfirm}
-        taskTitle={taskToDelete?.title ?? ""}
-      />
-    </div>
   );
 }
 
