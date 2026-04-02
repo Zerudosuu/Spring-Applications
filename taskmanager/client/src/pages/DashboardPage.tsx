@@ -6,6 +6,7 @@ import TaskFilter, { type FilterState } from '@/components/tasks/TaskFilter';
 import DeleteConfirm from "@/components/tasks/DeleteConfirm";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import TaskSkeleton from '@/components/tasks/TaskSkeleton';
 
 function DashboardPage() {
   const { tasks, isLoading, error, createTask, updateTask, deleteTask } =
@@ -155,14 +156,15 @@ function DashboardPage() {
                 </p>
             )}
 
-            {/* loading state */}
-            {isLoading ? (
-                <div className="text-center py-16">
-                    <p className="text-gray-400">Loading tasks...</p>
+          
+             {isLoading ? (
+                // show 6 skeleton cards while loading
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <TaskSkeleton key={index} />
+                    ))}
                 </div>
             ) : (
-                // pass filteredTasks not tasks
-                // so the list shows only matching tasks
                 <TaskList
                     tasks={filteredTasks}
                     onEdit={handleEdit}

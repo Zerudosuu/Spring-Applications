@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import axiosInstance from "@/api/axiosInstance";
 import useAuthStore from "@/store/authStore";
+import { toast } from 'sonner';
+
 
 //to match springboot task entity response
 export interface Task {
@@ -37,7 +39,6 @@ const useTasks = () => {
   //errors state
   const [error, setError] = useState<string>("");
 
-  console.log("useTasks - user:", user);
 
   const getTasks = useCallback(async () => {
     if (!user) return; //no user, no tasks
@@ -51,14 +52,15 @@ const useTasks = () => {
       setTasks(response.data); //update local state with fetched tasks
     } catch (err) {
       setError("Failed to fetch tasks. Please try again.");
-      console.error("Get tasks error:", err);
+       toast.error('Failed to load tasks. Please try again.');
+       throw err;
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
   const createTask = async (taskData: TaskRequest) => {
-    //POST /api/tasks
+  try {   //POST /api/tasks
     const response = await axiosInstance.post<Task>("/tasks", {
       ...taskData,
       userId: user?.id, //ensure task is associated with current user
@@ -66,11 +68,18 @@ const useTasks = () => {
 
     //add new task to local state
     setTasks((prevTasks) => [...prevTasks, response.data]);
-    return response.data;
+     toast.success('Task created successfully!');
+    return response.data; 
+  } catch (err) {
+     toast.error('Failed to create task. Please try again.');
+      throw err;
+   }
   };
 
   const updateTask = async (taskId: number, taskData: TaskRequest) => {
-    //PUT /api/tasks/{id}
+  
+  
+  try {   //PUT /api/tasks/{id}
     const response = await axiosInstance.put<Task>(`/tasks/${taskId}`, {
       ...taskData,
       userId: user?.id, //ensure task is associated with current user
@@ -81,13 +90,23 @@ const useTasks = () => {
       prevTasks.map((task) => (task.id === taskId ? response.data : task)),
     );
     return response.data;
+  } catch (err) {
+     toast.error('Failed to update task. Please try again.');
+     throw err;
+   }
+
   };
 
   const deleteTask = async (taskId: number) => {
-    //DELETE /api/tasks/{id}
+  try {   //DELETE /api/tasks/{id}
     await axiosInstance.delete(`/tasks/${taskId}`);
     //remove task from local state
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+     toast.success('Task deleted successfully!');
+  } catch (err) {
+     toast.error('Failed to delete task. Please try again.');
+     throw err;
+   }
   };
 
   // useEffect runs getTasks when component first mounts
