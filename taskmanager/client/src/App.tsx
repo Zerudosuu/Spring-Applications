@@ -6,8 +6,22 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import NotFoundPage from "./pages/NotFoundPage";
 import Layout from "./components/layout/Layout";
 import GuestRoute from "./components/auth/GuestRoute";
+import useAppInit from "./hooks/useAppInit";
 
 function App() {
+  const { isInitializing } = useAppInit();
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

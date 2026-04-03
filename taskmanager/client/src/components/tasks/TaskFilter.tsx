@@ -25,7 +25,7 @@ interface TaskFilterProps {
 function TaskFilter({filters, onFilterChange, onClear}: TaskFilterProps) { 
     
 
-    const hasActiveFilters = filters.search !== '' || filters.status !== '' || filters.priority !== '';
+    const hasActiveFilters = filters.search !== '' || filters.status !== 'ALL' || filters.priority !== 'ALL';
 
 
     return (

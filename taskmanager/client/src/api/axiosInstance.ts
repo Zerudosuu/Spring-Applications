@@ -1,4 +1,5 @@
 import axios from "axios";
+import useAuthStore from "@/store/authStore";
 
 /**
  * base axios instance for pointing to Spring Boot API
@@ -37,12 +38,12 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // localStorage is the browser's built-in key-value storage
     // we store the token here after login so it persists on page refresh
-    const token = localStorage.getItem("accessToken");
+    const {accessToken} = useAuthStore.getState(); // getState() allows us to access the current state of the auth store without using the hook
 
     // if a token exists attach it to the Authorization header
     // Spring Boot's JwtAuthFilter reads this header on every request
-    if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
+    if (accessToken) {
+      config.headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
     // must return config so the request can continue
@@ -60,38 +61,45 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // prevent infinite loop
+    if (originalRequest?.url?.includes("/auth/refresh")) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Attempt token refresh
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem("refreshToken");
+        const { refreshToken, user, setAuth, clearAuth } = useAuthStore.getState();
 
         if (!refreshToken) {
-          // No refresh token, redirect to login
-          localStorage.clear();
+         clearAuth();
           window.location.href = "/login";
           return Promise.reject(error);
         }
 
         //call refresh endpoint
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/auth/refresh`,
-          {
-            refreshToken,
-          },
-        );
+       const response = await axiosInstance.post("/auth/refresh", {
+          refreshToken,
+        });
 
-        const newAccessToken = response.data.accessToken;
-        // Update local storage and retry original request
-        localStorage.setItem("accessToken", newAccessToken);
+         const {
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          ...newUser
+        } = response.data;
 
-        //retry original request with new token
+        setAuth(newUser || user!, newAccessToken, newRefreshToken);
+
+        // update original request with new token and retry
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return axiosInstance(originalRequest);
+        
+
       } catch (refreshError) {
-        // refresh failed — force logout
-        localStorage.clear();
+        const { clearAuth } = useAuthStore.getState();
+        clearAuth();
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }

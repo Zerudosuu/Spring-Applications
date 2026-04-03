@@ -31,6 +31,7 @@ interface AuthState {
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
   setUser: (user: User) => void;
+  setTokens: (accessToken: string, refreshToken: string) => void;
 }
 
 // safe JSON parse — returns null if parsing fails
@@ -75,6 +76,12 @@ const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: false,
     });
   },
+
+  setTokens: (accessToken: string, refreshToken: string) => {
+  localStorage.setItem("accessToken", accessToken);
+  localStorage.setItem("refreshToken", refreshToken);
+  set({ accessToken, refreshToken });
+},
 
   setUser: (user) => {
     localStorage.setItem("user", JSON.stringify(user));
