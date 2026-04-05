@@ -41,7 +41,7 @@ public class TaskService {
         Task task = new Task();
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
-        task.setStatus(dto.getStatus() != null ? dto.getStatus() : TaskStatus.TODO);
+        task.setStatus(dto.getStatus() != null ? dto.getStatus() : TaskStatus.OPEN);
         task.setPriority(dto.getPriority() != null ? dto.getPriority() : Priority.MEDIUM);
         task.setDueDate(dto.getDueDate());
         task.setUser(user);
