@@ -21,10 +21,10 @@ public class TicketRequestDTO {
 
     private String description;
 
-    @NotBlank(message = "Priority is required")
+    @NotNull(message = "Priority is required")
     private Priority priority;
 
-    @NotBlank(message = "Category is required")
+    @NotNull(message = "Category is required")
     private Category category;
 
     private TicketStatus status;

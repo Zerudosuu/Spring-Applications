@@ -27,10 +27,20 @@ public class TicketService {
     // reporter = currently logged in user
     // assignee = selected from the form
 
-    public TicketResponseDTO createTicket(TicketResponseDTO dto, String reporterEmail) {
+    public TicketResponseDTO createTicket(TicketRequestDTO dto, String reporterEmail) throws AccessDeniedException {
+
+        // temporary — remove after fixing
+        System.out.println("Reporter email from token: " + reporterEmail);
 
         User reporter = userRepository.findByEmail(reporterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Reporter not found"));
+
+        // only TRIAGE and ADMIN can create and assign tickets
+        if (reporter.getRole() != Role.TRIAGE && reporter.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException(
+                    "Only TRIAGE or ADMIN can create and assign tickets"
+            );
+        }
 
         User assignee = userRepository.findById(dto.getAssigneeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignee not found"));
@@ -40,7 +50,7 @@ public class TicketService {
                 .description(dto.getDescription())
                 .priority(dto.getPriority())
                 .category(dto.getCategory())
-                .status(TicketStatus.OPEN) // default status
+                .status(TicketStatus.OPEN)
                 .reporter(reporter)
                 .assignee(assignee)
                 .dueDate(dto.getDueDate())
@@ -203,8 +213,6 @@ public class TicketService {
     // enforces the allowed status flow:
     // OPEN → IN_PROGRESS → RESOLVED → CLOSED
     // admin can do any transition
-
-
     //StateMachine
     private void validateStatusTransition(TicketStatus currentStatus, TicketStatus newStatus, boolean isAdmin) {
         if(isAdmin) return; // admins can do any transition
