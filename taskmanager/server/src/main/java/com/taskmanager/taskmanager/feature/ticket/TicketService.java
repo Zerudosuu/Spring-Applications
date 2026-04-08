@@ -1,5 +1,6 @@
 package com.taskmanager.taskmanager.feature.ticket;
 
+import com.taskmanager.taskmanager.feature.comment.CommentRepository;
 import com.taskmanager.taskmanager.feature.ticket.dto.TicketRequestDTO;
 import com.taskmanager.taskmanager.feature.ticket.dto.TicketResponseDTO;
 import com.taskmanager.taskmanager.feature.user.User;
@@ -7,10 +8,9 @@ import com.taskmanager.taskmanager.feature.user.UserRepository;
 import com.taskmanager.taskmanager.shared.enums.Role;
 import com.taskmanager.taskmanager.shared.enums.TicketStatus;
 import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,6 +20,7 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
 
 
     // TODO: ─── CREATE ──────────────────────────────────────────────────
@@ -27,7 +28,7 @@ public class TicketService {
     // reporter = currently logged in user
     // assignee = selected from the form
 
-    public TicketResponseDTO createTicket(TicketRequestDTO dto, String reporterEmail) throws AccessDeniedException {
+    public TicketResponseDTO createTicket(TicketRequestDTO dto, String reporterEmail)  {
 
         // temporary — remove after fixing
         System.out.println("Reporter email from token: " + reporterEmail);
@@ -91,7 +92,7 @@ public class TicketService {
     // TODO: ─── GET BY ID ────────────────────────────────────────────────
     // only reporter, assignee, or admin can view
 
-    public TicketResponseDTO getTicketById(Long id, String email) throws AccessDeniedException {
+    public TicketResponseDTO getTicketById(Long id, String email)  {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket Not Found"));
 
@@ -196,7 +197,7 @@ public class TicketService {
     }
 
     // TODO: ─── DELETE — ADMIN ONLY ──────────────────────────────────────
-    public void deleteTicket (Long id, String email) throws AccessDeniedException {
+    public void deleteTicket (Long id, String email)  {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
@@ -206,6 +207,8 @@ public class TicketService {
         if (user.getRole() != Role.ADMIN) {
             throw new AccessDeniedException("Only admins can delete tickets");
         }
+
+        commentRepository.deleteByTicketId(id); // delete comments first to avoid foreign key constraint issues
 
         ticketRepository.delete(ticket);
     }

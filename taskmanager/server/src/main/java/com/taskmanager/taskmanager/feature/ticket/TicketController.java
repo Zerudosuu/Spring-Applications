@@ -12,9 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.nio.file.AccessDeniedException;
+import org.springframework.web.bind.annotation.RestController; import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 
 @RestController
@@ -28,7 +26,7 @@ public class TicketController {
     //reporter = current logged-in user
 
     @PostMapping
-    public ResponseEntity<TicketResponseDTO> create(@RequestBody @Valid TicketRequestDTO dto, Authentication authentication) throws AccessDeniedException {
+    public ResponseEntity<TicketResponseDTO> create(@RequestBody @Valid TicketRequestDTO dto, Authentication authentication)  {
 
 
         String reporterEmail = authentication.getName();
@@ -38,13 +36,13 @@ public class TicketController {
 
     // this is for the user
     @GetMapping("/assigned")
-    public ResponseEntity<List<TicketResponseDTO>> getReported(Authentication authentication) {
+    public ResponseEntity<List<TicketResponseDTO>> getAssigned(Authentication authentication) {
         return ResponseEntity.ok(ticketService.getAssignedToMe(authentication.getName()));
     }
 
     // this is for the TRIAGE
     @GetMapping("/reported")
-    public ResponseEntity<List<TicketResponseDTO>> getAssigned(Authentication authentication) {
+    public ResponseEntity<List<TicketResponseDTO>> getReported(Authentication authentication) {
     return ResponseEntity.ok(ticketService.getReportedByMe(authentication.getName()));
     }
 

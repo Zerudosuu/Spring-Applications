@@ -7,9 +7,12 @@ import com.taskmanager.taskmanager.feature.ticket.TicketRepository;
 import com.taskmanager.taskmanager.feature.user.User;
 import com.taskmanager.taskmanager.feature.user.UserRepository;
 import com.taskmanager.taskmanager.shared.enums.Role;
+import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -45,8 +48,29 @@ public class CommentService {
         return toResponseDTO(commentRepository.save(comment));
     }
 
-    //TODO: Change the AccessDeniedException from throws to importing import org.springframework.security.access.AccessDeniedException;
-    //import
+    public List<CommentResponseDTO> getAllComments (Long ticketId, String Email) {
+        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+        User user = userRepository.findByEmail(Email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return commentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId)
+                .stream()
+                .map(this::toResponseDTO)
+                .toList();
+    }
+
+    @Transactional
+    public void deleteComment(Long commentId, String Email) {
+
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+        User author = userRepository.findByEmail(Email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        boolean isAuthor = comment.getAuthor().getId().equals(author.getId());
+
+        if(!isAuthor)
+            throw new AccessDeniedException("You do not have permission to delete this comment");
+
+        commentRepository.delete(comment);
+    }
 
     //--- MAPPER
     private CommentResponseDTO toResponseDTO(Comment comment) {
