@@ -1,13 +1,20 @@
 package com.taskmanager.taskmanager.feature.ticket;
 
+import com.taskmanager.taskmanager.feature.activitylog.ActivityLogRepository;
 import com.taskmanager.taskmanager.feature.comment.CommentRepository;
+import com.taskmanager.taskmanager.feature.notification.NotificationRepository;
 import com.taskmanager.taskmanager.feature.ticket.dto.TicketRequestDTO;
 import com.taskmanager.taskmanager.feature.ticket.dto.TicketResponseDTO;
+import com.taskmanager.taskmanager.feature.ticket.events.TicketCreatedEvent;
+import com.taskmanager.taskmanager.feature.ticket.events.TicketReassignEvent;
+import com.taskmanager.taskmanager.feature.ticket.events.TicketStatusChangedEvent;
 import com.taskmanager.taskmanager.feature.user.User;
 import com.taskmanager.taskmanager.feature.user.UserRepository;
 import com.taskmanager.taskmanager.shared.enums.Role;
 import com.taskmanager.taskmanager.shared.enums.TicketStatus;
 import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
+import jakarta.transaction.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,13 +28,16 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final ActivityLogRepository activityLogRepository;
+    private final NotificationRepository notificationRepository;
 
-
+    private final ApplicationEventPublisher eventPublisher;
     // TODO: ─── CREATE ──────────────────────────────────────────────────
     // any logged in user can create a ticket
     // reporter = currently logged in user
     // assignee = selected from the form
 
+    @Transactional
     public TicketResponseDTO createTicket(TicketRequestDTO dto, String reporterEmail)  {
 
         // temporary — remove after fixing
@@ -57,7 +67,10 @@ public class TicketService {
                 .dueDate(dto.getDueDate())
                 .build();
 
-        return toResponseDTO(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        eventPublisher.publishEvent(new TicketCreatedEvent(this, saved, reporter, assignee ));
+        return toResponseDTO(saved);
     }
 
     // TODO: ─── GET ASSIGNED TO ME ───────────────────────────────────────
@@ -115,6 +128,7 @@ public class TicketService {
 
     // TODO: ─── UPDATE TICKET ────────────────────────────────────────────
     // reporter or assignee can update ticket details
+    @Transactional
     public TicketResponseDTO updateTicket (Long id, TicketRequestDTO dto, String email) throws AccessDeniedException {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket Not Found"));
@@ -148,6 +162,7 @@ public class TicketService {
     // TODO: ─── UPDATE STATUS ────────────────────────────────────────────
     // only reporter or assignee can update status
     // status must follow the allowed transition rules
+    @Transactional
     public TicketResponseDTO updateStatus(Long id, TicketStatus newStatus, String email) throws AccessDeniedException {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
@@ -165,15 +180,23 @@ public class TicketService {
 
         // validate status transition
         validateStatusTransition(ticket.getStatus(), newStatus, isAdmin);
-
+        TicketStatus oldStatus = ticket.getStatus();
         ticket.setStatus(newStatus);
-        return toResponseDTO(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        // fire event — listeners handle everything else
+        eventPublisher.publishEvent(
+                new TicketStatusChangedEvent(this, saved, user, oldStatus, newStatus)
+        );
+
+        return toResponseDTO(saved);
     }
 
 
 
     // TODO: ─── REASSIGN ─────────────────────────────────────────────────
     // reporter, current assignee, or admin can reassign
+    @Transactional
     public TicketResponseDTO reassignTicket(Long id, Long newAssigneeId, String email) throws AccessDeniedException {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
@@ -189,14 +212,23 @@ public class TicketService {
             throw new AccessDeniedException("You cannot reassign this ticket");
         }
 
+        User oldAssignee = ticket.getAssignee();
         User newAssignee = userRepository.findById(newAssigneeId)
                 .orElseThrow(() -> new ResourceNotFoundException("New assignee not found"));
 
         ticket.setAssignee(newAssignee);
-        return toResponseDTO(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        // fire event
+        eventPublisher.publishEvent(
+                new TicketReassignEvent(this, saved, user, oldAssignee, newAssignee)
+        );
+
+        return toResponseDTO(saved);
     }
 
     // TODO: ─── DELETE — ADMIN ONLY ──────────────────────────────────────
+    @Transactional
     public void deleteTicket (Long id, String email)  {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
@@ -208,8 +240,10 @@ public class TicketService {
             throw new AccessDeniedException("Only admins can delete tickets");
         }
 
-        commentRepository.deleteByTicketId(id); // delete comments first to avoid foreign key constraint issues
 
+        commentRepository.deleteByTicketId(id);
+        activityLogRepository.deleteByTicketId(id);
+        notificationRepository.deleteByTicketId(id);
         ticketRepository.delete(ticket);
     }
     // TODO: ─── STATUS TRANSITION VALIDATION ────────────────────────────

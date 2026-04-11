@@ -7,6 +7,8 @@ import com.taskmanager.taskmanager.feature.user.User;
 import com.taskmanager.taskmanager.shared.enums.ActionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,6 +19,7 @@ public class ActivityLogService {
 
     private final ActivityLogRepository activityLogRepository;
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(
             Ticket ticket,
             User performedBy,

@@ -7,6 +7,8 @@ import com.taskmanager.taskmanager.feature.user.UserRepository;
 import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -17,6 +19,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createNotification(User recipient, Ticket ticket, String message) {
         Notification notification = Notification.builder()
                 .recipient(recipient)

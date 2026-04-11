@@ -2,6 +2,7 @@ package com.taskmanager.taskmanager.feature.comment;
 
 import com.taskmanager.taskmanager.feature.comment.dto.CommentRequestDTO;
 import com.taskmanager.taskmanager.feature.comment.dto.CommentResponseDTO;
+import com.taskmanager.taskmanager.feature.comment.events.CommentAddedEvent;
 import com.taskmanager.taskmanager.feature.ticket.Ticket;
 import com.taskmanager.taskmanager.feature.ticket.TicketRepository;
 import com.taskmanager.taskmanager.feature.user.User;
@@ -10,6 +11,7 @@ import com.taskmanager.taskmanager.shared.enums.Role;
 import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -21,7 +23,12 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+
+    //inject event publisher instead of ActivityLogService
+    private final ApplicationEventPublisher eventPublisher;
+
     //--- ADD COMMENT
+    @Transactional
     public CommentResponseDTO addComment(Long TicketId, CommentRequestDTO dto, String authorEmail)  {
         Ticket ticket = ticketRepository.findById(TicketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
@@ -45,7 +52,15 @@ public class CommentService {
                 .author(author)
                 .build();
 
-        return toResponseDTO(commentRepository.save(comment));
+        Comment saved = commentRepository.save(comment);
+
+        // fire event — ActivityLogListener and NotificationListener handle the rest
+        eventPublisher.publishEvent(
+                new CommentAddedEvent(this, saved, ticket, author)
+        );
+
+
+        return toResponseDTO(saved);
     }
 
     public List<CommentResponseDTO> getAllComments (Long ticketId, String Email) {
