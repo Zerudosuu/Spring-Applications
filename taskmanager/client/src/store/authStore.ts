@@ -13,7 +13,7 @@ interface User {
   id: number;
   name: string;
   email: string;
-  role: "USER" | "ADMIN"; // union type — can only be one of these two values
+  role: "USER" | "ADMIN" | "TRIAGE";
 }
 
 // defines everything the auth store contains

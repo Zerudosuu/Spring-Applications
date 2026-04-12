@@ -7,9 +7,15 @@ import NotFoundPage from "./pages/NotFoundPage";
 import Layout from "./components/layout/Layout";
 import GuestRoute from "./components/auth/GuestRoute";
 import useAppInit from "./hooks/useAppInit";
+import useAuthStore from "./store/authStore";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import TriageDashboard from "./pages/Triage/TriageDashboard";
+import AnalystDashboard from "./pages/Analyst/AnalystDashboard";
+
 
 function App() {
   const { isInitializing } = useAppInit();
+  const { user } = useAuthStore();
 
   if (isInitializing) {
     return (
@@ -49,7 +55,11 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <DashboardPage />
+                {user?.role === "ADMIN" ? (<AdminDashboard />) 
+                : user?.role ==="TRIAGE" ? (<TriageDashboard />) 
+                : user?.role === "USER" ? (<AnalystDashboard />) 
+                : ( <DashboardPage />)
+                }
               </Layout>
             </ProtectedRoute>
           }

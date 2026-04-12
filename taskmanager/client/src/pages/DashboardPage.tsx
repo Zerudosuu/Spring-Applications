@@ -1,194 +1,243 @@
-import { useMemo, useState } from "react";
-import useTasks, { type Task, type TaskRequest } from "@/hooks/useTasks";
-import TaskList from "@/components/tasks/TaskList";
-import TaskForm from "@/components/tasks/TaskForm";
-import TaskFilter, { type FilterState } from '@/components/tasks/TaskFilter';
-import DeleteConfirm from "@/components/tasks/DeleteConfirm";
+import { useCallback, useEffect, useState } from "react";
+import useTickets, {
+  type Ticket,
+  type TicketRequest,
+  type TicketStatus,
+} from "@/hooks/useTicket";
+import TicketList from "@/components/tickets/TicketList";
+import TicketForm from "@/components/tickets/TicketForm";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import TaskSkeleton from '@/components/tasks/TaskSkeleton';
+import TaskSkeleton from "@/components/tasks/TaskSkeleton";
+import useAuthStore from "@/store/authStore";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function DashboardPage() {
-  const { tasks, isLoading, error, createTask, updateTask, deleteTask } =
-    useTasks();
+  const { user } = useAuthStore();
+  const {
+    tickets,
+    assignees,
+    isLoading,
+    error,
+    getAssignedTickets,
+    getReportedTickets,
+    getAllTickets,
+    getAssignableUsers,
+    createTicket,
+    updateTicket,
+    updateTicketStatus,
+    deleteTicket,
+  } = useTickets();
 
-  // ─── FORM MODAL STATE ─────────────────────────────────────────
+  type TicketTab = "ASSIGNED" | "REPORTED" | "ALL";
+
+  const [activeTab, setActiveTab] = useState<TicketTab>("ASSIGNED");
+
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
-
-  // selectedTask null = create mode, Task object = edit mode
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-
-  // ─── DELETE MODAL STATE ───────────────────────────────────────
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
-  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null);
 
-  // ─── FILTER STATE ─────────────────────────────────────────────
-  // default values — ALL means no filter applied
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    status: "ALL",
-    priority: "ALL",
-  });
+  const canCreateTicket = user?.role === "TRIAGE" || user?.role === "ADMIN";
+  const canSeeAllTab = user?.role === "ADMIN";
+  const canDeleteTicket = user?.role === "ADMIN";
 
-  // ─── FILTERED TASKS ───────────────────────────────────────────
-    // useMemo recomputes filteredTasks only when tasks or filters change
-    // prevents unnecessary recalculation on every render
-    // similar to @Cacheable in Spring Boot
+  const loadTicketsByTab = useCallback(
+    async (tab: TicketTab) => {
+      if (tab === "ASSIGNED") {
+        await getAssignedTickets();
+        return;
+      }
 
-    const filteredTasks = useMemo(() => { 
-      return tasks.filter((task) => { 
+      if (tab === "REPORTED") {
+        await getReportedTickets();
+        return;
+      }
 
-        const matchesSearch = task.title.toLowerCase().includes(filters.search.toLowerCase());
-        const matchesStatus = filters.status === "ALL" || task.status === filters.status;
-        const matchesPriority = filters.priority === "ALL" || task.priority === filters.priority;
-        return matchesSearch && matchesStatus && matchesPriority;
+      if (canSeeAllTab) {
+        await getAllTickets();
+      }
+    },
+    [canSeeAllTab, getAllTickets, getAssignedTickets, getReportedTickets],
+  );
 
-      });
-    }, [tasks, filters]);
+  useEffect(() => {
+    loadTicketsByTab(activeTab);
+  }, [activeTab, loadTicketsByTab]);
 
-  // ─── STATS ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (canCreateTicket) {
+      getAssignableUsers();
+    }
+  }, [canCreateTicket, getAssignableUsers]);
+
   const stats = {
-    total: tasks?.length ?? 0,
-    todo: tasks?.filter((t) => t.status === "TODO").length ?? 0,
-    inProgress: tasks?.filter((t) => t.status === "IN_PROGRESS").length ?? 0,
-    done: tasks?.filter((t) => t.status === "DONE").length ?? 0,
+    total: tickets.length,
+    open: tickets.filter((t) => t.status === "OPEN").length,
+    inProgress: tickets.filter((t) => t.status === "IN_PROGRESS").length,
+    resolved: tickets.filter((t) => t.status === "RESOLVED").length,
   };
 
-  // ─── HANDLERS ─────────────────────────────────────────────────
-
-  // open form in create mode
   const handleCreateNew = () => {
-    setSelectedTask(null);
+    setSelectedTicket(null);
     setIsFormOpen(true);
   };
 
-  // open form in edit mode with task data
-  const handleEdit = (task: Task) => {
-    setSelectedTask(task);
+  const handleEdit = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
     setIsFormOpen(true);
   };
 
-  // open delete confirmation dialog
   const handleDeleteClick = (id: number) => {
-    const task = tasks.find((t) => t.id === id);
-    if (task) {
-      setTaskToDelete(task);
+    const ticket = tickets.find((t) => t.id === id);
+    if (ticket) {
+      setTicketToDelete(ticket);
       setIsDeleteOpen(true);
     }
   };
 
-  // called when TaskForm submits
-  // decides whether to create or update based on selectedTask
-  const handleFormSubmit = async (data: TaskRequest) => {
-    if (selectedTask) {
-      // edit mode — update existing task
-      await updateTask(selectedTask.id, data);
+  const handleFormSubmit = async (data: TicketRequest) => {
+    if (selectedTicket) {
+      await updateTicket(selectedTicket.id, data);
     } else {
-      // create mode — create new task
-      await createTask(data);
+      await createTicket(data);
+    }
+
+    await loadTicketsByTab(activeTab);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (ticketToDelete) {
+      await deleteTicket(ticketToDelete.id);
+      setTicketToDelete(null);
     }
   };
 
-  // called when delete is confirmed
-  const handleDeleteConfirm = async () => {
-    if (taskToDelete) {
-      await deleteTask(taskToDelete.id);
-      setTaskToDelete(null);
-    }
+  const handleStatusChange = async (ticketId: number, status: TicketStatus) => {
+    await updateTicketStatus(ticketId, status);
+    await loadTicketsByTab(activeTab);
   };
-// resets all filters back to default
-    const handleClearFilters = () => {
-        setFilters({
-            search: '',
-            status: 'ALL',
-            priority: 'ALL',
-        });
-    };
+
   return (
     <div>
-            {/* page header */}
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">My Tasks</h1>
-                <Button onClick={handleCreateNew}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Task
-                </Button>
-            </div>
-
-            {/* stats bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-white rounded-lg border p-4 text-center">
-                    <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-                    <p className="text-sm text-gray-500">Total</p>
-                </div>
-                <div className="bg-white rounded-lg border p-4 text-center">
-                    <p className="text-2xl font-bold text-gray-500">{stats.todo}</p>
-                    <p className="text-sm text-gray-500">To Do</p>
-                </div>
-                <div className="bg-white rounded-lg border p-4 text-center">
-                    <p className="text-2xl font-bold text-blue-500">{stats.inProgress}</p>
-                    <p className="text-sm text-gray-500">In Progress</p>
-                </div>
-                <div className="bg-white rounded-lg border p-4 text-center">
-                    <p className="text-2xl font-bold text-green-500">{stats.done}</p>
-                    <p className="text-sm text-gray-500">Done</p>
-                </div>
-            </div>
-
-            {/* filter bar */}
-            <TaskFilter
-                filters={filters}
-                onFilterChange={setFilters}
-                onClear={handleClearFilters}
-            />
-
-            {/* error state */}
-            {error && (
-                <div className="p-4 text-red-500 bg-red-50 rounded-md mb-4">
-                    {error}
-                </div>
-            )}
-
-            {/* show how many results match the filter */}
-            {!isLoading && (
-                <p className="text-sm text-gray-400 mb-4">
-                    Showing {filteredTasks.length} of {tasks.length} tasks
-                </p>
-            )}
-
-          
-             {isLoading ? (
-                // show 6 skeleton cards while loading
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                        <TaskSkeleton key={index} />
-                    ))}
-                </div>
-            ) : (
-                <TaskList
-                    tasks={filteredTasks}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteClick}
-                />
-            )}
-
-            {/* Task Form Modal */}
-            <TaskForm
-                isOpen={isFormOpen}
-                onClose={() => setIsFormOpen(false)}
-                onSubmit={handleFormSubmit}
-                task={selectedTask}
-            />
-
-            {/**Hotdog */}
-            {/* Delete Confirmation Modal */}
-            <DeleteConfirm
-                isOpen={isDeleteOpen}
-                onClose={() => setIsDeleteOpen(false)}
-                onConfirm={handleDeleteConfirm}
-                taskTitle={taskToDelete?.title ?? ''}
-            />
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Ticket Dashboard</h1>
+          <p className="text-sm text-gray-500">Assigned, reported, and all tickets in one place.</p>
         </div>
+
+        {canCreateTicket && (
+          <Button onClick={handleCreateNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Ticket
+          </Button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Button
+          variant={activeTab === "ASSIGNED" ? "default" : "outline"}
+          onClick={() => setActiveTab("ASSIGNED")}
+        >
+          Assigned
+        </Button>
+        <Button
+          variant={activeTab === "REPORTED" ? "default" : "outline"}
+          onClick={() => setActiveTab("REPORTED")}
+        >
+          Reported
+        </Button>
+        <Button
+          variant={activeTab === "ALL" ? "default" : "outline"}
+          onClick={() => setActiveTab("ALL")}
+          disabled={!canSeeAllTab}
+        >
+          All
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-lg border p-4 text-center">
+          <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+          <p className="text-sm text-gray-500">Total</p>
+        </div>
+        <div className="bg-white rounded-lg border p-4 text-center">
+          <p className="text-2xl font-bold text-gray-600">{stats.open}</p>
+          <p className="text-sm text-gray-500">Open</p>
+        </div>
+        <div className="bg-white rounded-lg border p-4 text-center">
+          <p className="text-2xl font-bold text-blue-500">{stats.inProgress}</p>
+          <p className="text-sm text-gray-500">In Progress</p>
+        </div>
+        <div className="bg-white rounded-lg border p-4 text-center">
+          <p className="text-2xl font-bold text-green-500">{stats.resolved}</p>
+          <p className="text-sm text-gray-500">Resolved</p>
+        </div>
+      </div>
+
+      {error && <div className="p-4 text-red-500 bg-red-50 rounded-md mb-4">{error}</div>}
+
+      {!isLoading && (
+        <p className="text-sm text-gray-400 mb-4">Showing {tickets.length} ticket(s) in {activeTab.toLowerCase()} view</p>
+      )}
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <TaskSkeleton key={index} />
+          ))}
+        </div>
+      ) : (
+        <TicketList
+          tickets={tickets}
+          canEdit={canCreateTicket}
+          canDelete={canDeleteTicket}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          onStatusChange={handleStatusChange}
+        />
+      )}
+
+      <TicketForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSubmit={handleFormSubmit}
+        ticket={selectedTicket}
+        assignees={assignees}
+      />
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{ticketToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={async () => {
+                await handleDeleteConfirm();
+                setIsDeleteOpen(false);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 
