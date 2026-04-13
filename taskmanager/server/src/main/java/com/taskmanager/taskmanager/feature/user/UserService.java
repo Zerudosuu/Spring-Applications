@@ -94,4 +94,9 @@ public class UserService {
         // uncomment if using mapper
         //return userMapper.toDTO(user);
     }
+
+    //For Triage
+    public List<UserResponseDTO> getAllUsersByRole(Role role) {
+        return userRepository.findByRole(role).stream().map(this::toResponseDTO).collect(Collectors.toList());
+    }
 }

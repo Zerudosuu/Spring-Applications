@@ -44,4 +44,10 @@ public class UserController {
 
     //I think missing is, getting the profile which I think the ID now.
     //TODO: Fix the authorities and return base on the correct logic
+
+    @GetMapping("/role")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<UserResponseDTO>> getAllUsersByRole(@RequestParam Role role) {
+        return ResponseEntity.ok(userService.getAllUsersByRole(role));
+    }
 }

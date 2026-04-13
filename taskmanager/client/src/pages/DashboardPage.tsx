@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import TaskSkeleton from "@/components/tasks/TaskSkeleton";
 import useAuthStore from "@/store/authStore";
+import useUsers from "@/hooks/useUsers";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,18 +26,21 @@ function DashboardPage() {
   const { user } = useAuthStore();
   const {
     tickets,
-    assignees,
     isLoading,
     error,
     getAssignedTickets,
     getReportedTickets,
     getAllTickets,
-    getAssignableUsers,
     createTicket,
     updateTicket,
     updateTicketStatus,
     deleteTicket,
   } = useTickets();
+  const {
+    users: assignees,
+    error: usersError,
+    getAssignableUsers,
+  } = useUsers();
 
   type TicketTab = "ASSIGNED" | "REPORTED" | "ALL";
 
@@ -184,7 +188,9 @@ function DashboardPage() {
         </div>
       </div>
 
-      {error && <div className="p-4 text-red-500 bg-red-50 rounded-md mb-4">{error}</div>}
+      {(error || usersError) && (
+        <div className="p-4 text-red-500 bg-red-50 rounded-md mb-4">{error || usersError}</div>
+      )}
 
       {!isLoading && (
         <p className="text-sm text-gray-400 mb-4">Showing {tickets.length} ticket(s) in {activeTab.toLowerCase()} view</p>

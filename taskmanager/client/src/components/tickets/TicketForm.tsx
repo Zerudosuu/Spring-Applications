@@ -7,9 +7,9 @@ import {
 } from "@/schemas/ticketSchema";
 import {
   type Ticket,
-  type TicketAssignee,
   type TicketRequest,
 } from "@/hooks/useTicket";
+import { type UserSummary } from "@/hooks/useUsers";
 
 import {
   Dialog,
@@ -34,7 +34,7 @@ interface TicketFormProps {
   onClose: () => void;
   onSubmit: (data: TicketRequest) => Promise<void>;
   ticket?: Ticket | null;
-  assignees: TicketAssignee[];
+  assignees: UserSummary[];
 }
 
 function formatToDateOnly(date: Date) {
@@ -51,7 +51,6 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
     control,
     reset,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<TicketFormData>({
     resolver: zodResolver(ticketSchema),
@@ -178,39 +177,34 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
 
           <div className="space-y-2">
             <Label>Assignee</Label>
-            {assignees.length > 0 ? (
-              <Controller
-                name="assigneeId"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value > 0 ? String(field.value) : ""}
-                    onValueChange={(value) => setValue("assigneeId", Number(value), { shouldValidate: true })}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select assignee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assignees.map((assignee) => (
+            <Controller
+              name="assigneeId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value > 0 ? String(field.value) : ""}
+                  onValueChange={(value) => setValue("assigneeId", Number(value), { shouldValidate: true })}
+                  disabled={assignees.length === 0}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assignees.length === 0 ? (
+                      <SelectItem value="NO_ASSIGNABLE_USERS" disabled>
+                        No assignable users available
+                      </SelectItem>
+                    ) : (
+                      assignees.map((assignee) => (
                         <SelectItem key={assignee.id} value={String(assignee.id)}>
                           {assignee.name} ({assignee.role})
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            ) : (
-              <Input
-                type="number"
-                min={1}
-                placeholder="Enter assignee ID"
-                value={watch("assigneeId") || ""}
-                onChange={(e) =>
-                  setValue("assigneeId", Number(e.target.value), { shouldValidate: true })
-                }
-              />
-            )}
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.assigneeId && (
               <p className="text-sm text-red-500">{errors.assigneeId.message}</p>
             )}

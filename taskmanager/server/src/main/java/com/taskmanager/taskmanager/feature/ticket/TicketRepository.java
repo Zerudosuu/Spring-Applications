@@ -24,4 +24,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // all tickets for a specific assignee or reporter
     // used to get all tickets a user is involved in
     List<Ticket> findByAssigneeOrReporter(User assignee, User reporter);
+
+
 }

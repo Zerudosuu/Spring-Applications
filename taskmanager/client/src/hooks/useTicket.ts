@@ -14,13 +14,6 @@ export type TicketStatus =
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type TicketCategory = "BUG" | "FEATURE" | "TASK";
 
-export interface TicketAssignee {
-    id: number;
-    name: string;
-    email: string;
-    role: "USER" | "ADMIN" | "TRIAGE";
-}
-
 export interface Ticket {
     id: number;
     title: string;
@@ -51,7 +44,6 @@ export interface TicketRequest {
 const useTickets = () => {
     const { user } = useAuthStore();
     const [tickets, setTickets] = useState<Ticket[]>([]);
-    const [assignees, setAssignees] = useState<TicketAssignee[]>([]);
     const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
@@ -105,18 +97,6 @@ const useTickets = () => {
         } catch (err) {
             toast.error("Failed to load ticket details.");
             throw err;
-        }
-    }, []);
-
-    const getAssignableUsers = useCallback(async () => {
-        try {
-            const response = await axiosInstance.get<TicketAssignee[]>("/users");
-            setAssignees(response.data);
-            return response.data;
-        } catch {
-            // /users can be admin-only depending on backend policy.
-            setAssignees([]);
-            return [];
         }
     }, []);
 
@@ -207,7 +187,6 @@ const useTickets = () => {
 
     return {
         tickets,
-        assignees,
         currentTicket,
         isLoading,
         error,
@@ -215,7 +194,6 @@ const useTickets = () => {
         getReportedTickets,
         getAllTickets,
         getTicketById,
-        getAssignableUsers,
         createTicket,
         updateTicket,
         updateTicketStatus,
