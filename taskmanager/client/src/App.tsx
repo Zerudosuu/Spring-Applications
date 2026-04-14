@@ -55,13 +55,13 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                {/* {user?.role === "ADMIN" ? (<AdminDashboard />) 
+                {user?.role === "ADMIN" ? (<AdminDashboard />) 
                 : user?.role ==="TRIAGE" ? (<TriageDashboard />) 
                 : user?.role === "USER" ? (<AnalystDashboard />) 
                 : ( <DashboardPage />)
-                } */}
+                }
 
-                <DashboardPage />
+                
               </Layout>
             </ProtectedRoute>
           }

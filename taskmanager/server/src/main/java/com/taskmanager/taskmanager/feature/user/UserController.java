@@ -50,4 +50,10 @@ public class UserController {
     public ResponseEntity<List<UserResponseDTO>> getAllUsersByRole(@RequestParam Role role) {
         return ResponseEntity.ok(userService.getAllUsersByRole(role));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponseDTO> delete(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.deleteUser(id));
+    }
 }

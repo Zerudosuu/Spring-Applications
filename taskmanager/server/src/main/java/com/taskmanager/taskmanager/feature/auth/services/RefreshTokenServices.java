@@ -31,11 +31,14 @@ public class RefreshTokenServices {
      */
     @Transactional
     public RefreshToken createRefreshToken(User user) {
-        //delete old refresh token
-        refreshTokenRepository.deleteByUser(user);
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByUser(user)
+                .orElseGet(() -> {
+                    RefreshToken token = new RefreshToken();
+                    token.setUser(user);
+                    return token;
+                });
 
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setUser(user);
         refreshToken.setToken(UUID.randomUUID().toString());
         refreshToken.setExpiryDate(Instant.now().plusMillis(refreshExpiration));
 
