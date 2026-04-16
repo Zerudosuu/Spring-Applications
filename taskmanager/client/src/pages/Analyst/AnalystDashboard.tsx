@@ -16,7 +16,7 @@ import useTickets, {
   type TicketRequest,
   type TicketStatus,
 } from "@/hooks/useTicket";
-import useUsers, { type UserRole, type UserSummary } from "@/hooks/useUsers";
+import useUsers from "@/hooks/useUsers";
 import TicketList from "@/components/tickets/TicketList";
 import TicketForm from "@/components/tickets/TicketForm";
 import TaskSkeleton from "@/components/tasks/TaskSkeleton";
@@ -54,34 +54,27 @@ import {
   Users,
 } from "lucide-react";
 
+
 function AnalystDashboard() {
   const { user } = useAuthStore();
   const {
     tickets,
     isLoading: ticketsLoading,
     error: ticketsError,
-    getAllTickets,
-    createTicket,
     updateTicket,
+    getAssignedTickets,
     updateTicketStatus,
-    deleteTicket,
   } = useTickets();
-  const {
-    users,
-    isLoading: usersLoading,
-    error: usersError,
-    getAllUsers,
-    updateUserRole,
-    deleteUser,
-  } = useUsers();
+
+
+   const {
+      users,
+      getAssignableUsers
+    } = useUsers();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [isTicketDeleteOpen, setIsTicketDeleteOpen] = useState(false);
-  const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null);
-
   const isAnalyst = user?.role === "USER"; // Assuming "USER" role is for analysts
-
   const stats = useMemo(
     () => ({
       totalTickets: tickets.length,
@@ -94,65 +87,163 @@ function AnalystDashboard() {
     [tickets],
   );
 
+  const loadAnalystData = useCallback(async () => {
+    await Promise.all([getAssignedTickets(),getAssignableUsers()]);
+  }, [getAssignedTickets, getAssignableUsers]);
+
+  useEffect(() => {
+    loadAnalystData();
+  }, [loadAnalystData]);
+
   const handleEditTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setIsFormOpen(true);
-  }
-
-  const handleTicketSubmit = async (data: TicketRequest) => {
-    try {
-      if (selectedTicket) {
-         await updateTicket(selectedTicket.id, data); }
-      else { await createTicket(data); }
-    } catch (error) {
-      console.error("Error submitting ticket:", error);
-    }
   };
 
-  const handleTicketDeleteClick = (id: number) => { 
-    const ticket = tickets.find((t) => t.id === id);
-    if (ticket) {
-      setTicketToDelete(ticket);
-      setIsTicketDeleteOpen(true);
-    }
-  }; 
+  const handleTicketSubmit = async (data: TicketRequest) => {
+    if (!selectedTicket) return;
+    await updateTicket(selectedTicket.id, data);
 
-  
+    await getAssignedTickets();
+    setIsFormOpen(false);
+  };
 
-  const handleTicketDeleteConfirm = async () => { 
-    if (!ticketToDelete) {
-      return;
-    }
-    try {
-      await deleteTicket(ticketToDelete.id);
-      setIsTicketDeleteOpen(false);
-      setTicketToDelete(null);
-    } catch (error) {
-      console.error("Error deleting ticket:", error);
-    }
-  }; 
+  const handleTicketStatusChange = useCallback(
+    (id: number, status: TicketStatus) => {
+      updateTicketStatus(id, status);
+      getAssignedTickets(); // Refresh the list after status change
+    },
+    [updateTicketStatus, getAssignedTickets],
+  );
 
   const ticketCards = ticketsLoading ? (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <TaskSkeleton key={index} />
-          ))}
-        </div>
-      ) : (
-        <TicketList
-          tickets={tickets}
-          canEdit
-          canDelete
-          onEdit={handleEditTicket}
-          onDelete={handleTicketDeleteClick}
-          onStatusChange={handleTicketStatusChange}
-        />
-  )
-
+      {Array.from({ length: 6 }).map((_, index) => (
+        <TaskSkeleton key={index} />
+      ))}
+    </div>
+  ) : (
+    <TicketList
+      tickets={tickets}
+      canEdit={isAnalyst}
+      onEdit={handleEditTicket}
+      onStatusChange={handleTicketStatusChange}
+    />
+  );
 
   return (
-    <div>
-      <h1>This is Analyst dashboard</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-2xl border bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-medium text-indigo-600">
+            <Shield className="h-4 w-4" />
+            Analyst Dashboard
+          </div>
+          <h1 className="mt-2 text-3xl font-bold text-gray-900">
+            Manage tickets
+          </h1>
+          <p className="mt-2 text-sm text-gray-500">
+            View all tickets, reassign work, and update ticket statuses to keep
+            the workflow moving smoothly.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={loadAnalystData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">
+              {stats.totalTickets}
+            </p>
+            <p className="text-sm text-gray-500">Total tickets</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-blue-600">
+              {stats.activeTickets}
+            </p>
+            <p className="text-sm text-gray-500">Active tickets</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-green-600">
+              {stats.openTickets}
+            </p>
+            <p className="text-sm text-gray-500">Open tickets</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-indigo-600">
+              {stats.resolvedTickets}
+            </p>
+            <p className="text-sm text-gray-500">Resolved tickets</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {ticketsError && (
+        <div className="rounded-md bg-red-50 p-4 text-sm text-red-600">
+          {ticketsError}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">All Tickets</h2>
+            <p className="text-sm text-gray-500">
+              Edit, reassign, resolve and change ticket status from here.
+            </p>
+          </div>
+        </div>
+
+        {ticketCards}
+
+        <TicketForm
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleTicketSubmit}
+          ticket={selectedTicket}
+          assignees={users}
+        />
+      </div>
+
+      {/* <AlertDialog
+        open={isTicketDeleteOpen}
+        onOpenChange={setIsTicketDeleteOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{ticketToDelete?.title}"? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={async () => {
+                await handleTicketDeleteConfirm();
+                setIsTicketDeleteOpen(false);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog> */}
     </div>
   );
 }

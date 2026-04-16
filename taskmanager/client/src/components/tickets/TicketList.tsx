@@ -5,10 +5,10 @@ import { ClipboardList } from "lucide-react";
 interface TicketListProps {
   tickets: Ticket[];
   canEdit: boolean;
-  canDelete: boolean;
-  onEdit: (ticket: Ticket) => void;
-  onDelete: (id: number) => void;
-  onStatusChange: (id: number, status: TicketStatus) => void;
+  canDelete?: boolean;
+  onEdit?: (ticket: Ticket) => void;
+  onDelete?: (id: number) => void;
+  onStatusChange?: (id: number, status: TicketStatus) => void;
 }
 
 function TicketList({
