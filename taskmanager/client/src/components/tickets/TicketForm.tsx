@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -9,7 +9,9 @@ import {
   type Ticket,
   type TicketRequest,
 } from "@/hooks/useTicket";
+import useComment from "@/hooks/useComment";
 import { type UserSummary } from "@/hooks/useUsers";
+import useAuthStore from "@/store/authStore";
 
 import {
   Dialog,
@@ -44,6 +46,21 @@ function formatToDateOnly(date: Date) {
 
 function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketFormProps) {
   const isEditMode = !!ticket;
+  const { user } = useAuthStore();
+  const {
+    comments,
+    isLoading: isCommentsLoading,
+    error: commentsError,
+    getCommentsByTicketId,
+    createComment,
+    deleteComment,
+  } = useComment();
+
+
+  //this is for comment 
+  const [newComment, setNewComment] = useState("");
+  const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
 
   const {
     register,
@@ -88,6 +105,18 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
     });
   }, [ticket, reset]);
 
+  //this is for comment 
+  useEffect(() => {
+    if (!isOpen || !ticket?.id) return;
+
+    void getCommentsByTicketId(ticket.id);
+  }, [isOpen, ticket?.id, getCommentsByTicketId]);
+
+  const isCommentDisabled = useMemo(
+    () => !newComment.trim() || newComment.trim().length > 1000,
+    [newComment],
+  );
+
   const handleFormSubmit = async (data: TicketFormData) => {
     const payload: TicketRequest = {
       title: data.title,
@@ -103,9 +132,30 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
     onClose();
   };
 
+  const handleAddComment = async () => {
+    if (!ticket?.id || isCommentDisabled) return;
+
+    setIsCommentSubmitting(true);
+    try {
+      await createComment(ticket.id, { content: newComment.trim() });
+      setNewComment("");
+    } finally {
+      setIsCommentSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    setDeletingCommentId(commentId);
+    try {
+      await deleteComment(commentId);
+    } finally {
+      setDeletingCommentId(null);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Edit Ticket" : "Create New Ticket"}</DialogTitle>
         </DialogHeader>
@@ -231,6 +281,87 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
             </Button>
           </div>
         </form>
+
+        {isEditMode && ticket?.id && (
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800">Comments</h3>
+              <span className="text-xs text-gray-500">{comments.length} total</span>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ticket-comment">Add a comment</Label>
+              <Textarea
+                id="ticket-comment"
+                placeholder="Write a comment"
+                rows={3}
+                value={newComment}
+                onChange={(event) => setNewComment(event.target.value)}
+                maxLength={1000}
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{newComment.length}/1000</p>
+                <Button
+                  type="button"
+                  onClick={handleAddComment}
+                  disabled={isCommentSubmitting || isCommentDisabled}
+                >
+                  {isCommentSubmitting ? "Adding..." : "Add Comment"}
+                </Button>
+              </div>
+            </div>
+
+            {commentsError && (
+              <p className="text-sm text-red-500">{commentsError}</p>
+            )}
+
+            {isCommentsLoading ? (
+              <p className="text-sm text-gray-500">Loading comments...</p>
+            ) : comments.length === 0 ? (
+              <p className="text-sm text-gray-500">No comments yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {comments.map((comment) => {
+                  const canDelete =
+                    user?.id === comment.authorId ||
+                    user?.role === "ADMIN" ||
+                    user?.role === "TRIAGE";
+
+                  return (
+                    <div key={comment.id} className="rounded border p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-gray-700 truncate">
+                            {comment.authorUsername}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(comment.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+
+                        {canDelete && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteComment(comment.id)}
+                            disabled={deletingCommentId === comment.id}
+                          >
+                            {deletingCommentId === comment.id ? "Deleting..." : "Delete"}
+                          </Button>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {comment.content}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
