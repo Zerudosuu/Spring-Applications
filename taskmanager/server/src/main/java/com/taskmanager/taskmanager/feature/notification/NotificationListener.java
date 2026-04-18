@@ -40,7 +40,7 @@ public class NotificationListener {
             event.getReporter().getName() + " assigned you to ticket: " + event.getTicket().getTitle());
     }
 
-    @Async("eventsExecutor")
+    @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleStatusChanged(TicketStatusChangedEvent event) {
         Ticket ticket = event.getTicket();
@@ -80,7 +80,7 @@ public class NotificationListener {
     }
 
 
-    @Async("eventsExecutor")
+    @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleReassigned(TicketReassignEvent event) {
         log.info("Sending notification to new assignee: {}",
@@ -98,7 +98,7 @@ public class NotificationListener {
         );
     }
 
-    @Async("eventsExecutor")
+    @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCommentAdded(CommentAddedEvent event) {
         Ticket ticket = event.getTicket();
