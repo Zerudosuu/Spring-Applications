@@ -9,9 +9,6 @@ import useAuthStore from "@/store/authStore";
  */
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 //request interceptor - attaches access token to every request
@@ -38,7 +35,7 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // localStorage is the browser's built-in key-value storage
     // we store the token here after login so it persists on page refresh
-    const {accessToken} = useAuthStore.getState(); // getState() allows us to access the current state of the auth store without using the hook
+    const { accessToken } = useAuthStore.getState(); // getState() allows us to access the current state of the auth store without using the hook
 
     // if a token exists attach it to the Authorization header
     // Spring Boot's JwtAuthFilter reads this header on every request
@@ -71,20 +68,21 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const { refreshToken, user, setAuth, clearAuth } = useAuthStore.getState();
+        const { refreshToken, user, setAuth, clearAuth } =
+          useAuthStore.getState();
 
         if (!refreshToken) {
-         clearAuth();
+          clearAuth();
           window.location.href = "/login";
           return Promise.reject(error);
         }
 
         //call refresh endpoint
-       const response = await axiosInstance.post("/auth/refresh", {
+        const response = await axiosInstance.post("/auth/refresh", {
           refreshToken,
         });
 
-         const {
+        const {
           accessToken: newAccessToken,
           refreshToken: newRefreshToken,
           ...newUser
@@ -95,8 +93,6 @@ axiosInstance.interceptors.response.use(
         // update original request with new token and retry
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return axiosInstance(originalRequest);
-        
-
       } catch (refreshError) {
         const { clearAuth } = useAuthStore.getState();
         clearAuth();

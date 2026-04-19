@@ -33,8 +33,10 @@ public class AttachmentService {
 
         // Check if the file is an image
         if (fileType != null && fileType.startsWith("image/")) {
+            System.out.println("Uploading image to Cloudinary: " + file.getOriginalFilename());
             fileUrl = cloudinaryService.uploadImage(file); // Upload to Cloudinary
         } else {
+            System.out.println("Uploading  to Supabase: " + file.getOriginalFilename());
             fileUrl = supabaseService.uploadFile(file); // Upload to Supabase
         }
 

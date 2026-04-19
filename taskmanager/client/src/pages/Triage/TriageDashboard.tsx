@@ -9,12 +9,12 @@ import useTickets, {
   type TicketRequest,
   type TicketStatus,
 } from "@/hooks/useTicket";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useUsers from "@/hooks/useUsers";
 import TicketList from "@/components/tickets/TicketList";
 import TicketForm from "@/components/tickets/TicketForm";
 import TaskSkeleton from "@/components/tasks/TaskSkeleton";
-import useAuthStore from "@/store/authStore";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -28,11 +28,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { Plus, RefreshCw, Shield, Ticket as TicketIcon } from "lucide-react";
+import { Plus, RefreshCw, Shield } from "lucide-react";
 
 function TriageDashboard() {
-  const { user } = useAuthStore();
-
   const {
     tickets,
     isLoading: ticketsLoading,

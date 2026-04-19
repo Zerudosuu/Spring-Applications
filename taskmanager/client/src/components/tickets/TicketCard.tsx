@@ -20,10 +20,10 @@ const statusColors: Record<Ticket["status"], string> = {
 interface TicketCardProps {
   ticket: Ticket;
   canEdit: boolean;
-  canDelete: boolean;
-  onEdit: (ticket: Ticket) => void;
-  onDelete: (id: number) => void;
-  onStatusChange: (id: number, status: TicketStatus) => void;
+  canDelete?: boolean;
+  onEdit?: (ticket: Ticket) => void;
+  onDelete?: (id: number) => void;
+  onStatusChange?: (id: number, status: TicketStatus) => void;
 }
 
 function toReadableStatus(status: TicketStatus) {
@@ -54,7 +54,9 @@ function TicketCard({
       </div>
 
       {ticket.description && (
-        <p className="text-sm text-gray-500 mb-3 line-clamp-2">{ticket.description}</p>
+        <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+          {ticket.description}
+        </p>
       )}
 
       <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -76,22 +78,38 @@ function TicketCard({
 
       <div className="flex flex-wrap gap-2 mb-3">
         {canMoveToInProgress && (
-          <Button size="sm" variant="outline" onClick={() => onStatusChange(ticket.id, "IN_PROGRESS")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onStatusChange?.(ticket.id, "IN_PROGRESS")}
+          >
             Start
           </Button>
         )}
         {canMoveToResolved && (
-          <Button size="sm" variant="outline" onClick={() => onStatusChange(ticket.id, "RESOLVED")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onStatusChange?.(ticket.id, "RESOLVED")}
+          >
             Resolve
           </Button>
         )}
         {canMoveToClosed && (
-          <Button size="sm" variant="outline" onClick={() => onStatusChange(ticket.id, "CLOSED")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onStatusChange?.(ticket.id, "CLOSED")}
+          >
             Close
           </Button>
         )}
         {ticket.status === "CLOSED" && (
-          <Button size="sm" variant="outline" onClick={() => onStatusChange(ticket.id, "REOPENED")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onStatusChange?.(ticket.id, "REOPENED")}
+          >
             Reopen
           </Button>
         )}
@@ -99,12 +117,16 @@ function TicketCard({
 
       <div className="flex gap-2 justify-end">
         {canEdit && (
-          <Button variant="outline" size="sm" onClick={() => onEdit(ticket)}>
+          <Button variant="outline" size="sm" onClick={() => onEdit?.(ticket)}>
             Edit
           </Button>
         )}
         {canDelete && (
-          <Button variant="destructive" size="sm" onClick={() => onDelete(ticket.id)}>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => onDelete?.(ticket.id)}
+          >
             Delete
           </Button>
         )}

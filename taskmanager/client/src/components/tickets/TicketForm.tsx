@@ -1,14 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  ticketSchema,
-  type TicketFormData,
-} from "@/schemas/ticketSchema";
-import {
-  type Ticket,
-  type TicketRequest,
-} from "@/hooks/useTicket";
+import { ticketSchema, type TicketFormData } from "@/schemas/ticketSchema";
+import { type Ticket, type TicketRequest } from "@/hooks/useTicket";
 import useComment from "@/hooks/useComment";
 import { type UserSummary } from "@/hooks/useUsers";
 import useAuthStore from "@/store/authStore";
@@ -30,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import useAttachment from "@/hooks/useAttachment";
 
 interface TicketFormProps {
   isOpen: boolean;
@@ -44,7 +39,13 @@ function formatToDateOnly(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketFormProps) {
+function TicketForm({
+  isOpen,
+  onClose,
+  onSubmit,
+  ticket,
+  assignees,
+}: TicketFormProps) {
   const isEditMode = !!ticket;
   const { user } = useAuthStore();
   const {
@@ -56,11 +57,32 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
     deleteComment,
   } = useComment();
 
+  const { attachments, getAttachmentsByTicketId, uploadAttachment } =
+    useAttachment();
 
-  //this is for comment 
+  //this is for attachments
+  const [isAttachmentUploading, setIsAttachmentUploading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState(""); // For upload errors
+
+  useEffect(() => {
+    if (!isOpen || !ticket?.id) return;
+
+    setAttachmentError("");
+    void getAttachmentsByTicketId(ticket.id);
+  }, [isOpen, ticket?.id, getAttachmentsByTicketId]);
+
+  const getFileCategory = (fileType: string) => {
+    if (fileType.startsWith("image/")) return "image";
+    if (fileType === "application/pdf") return "pdf";
+    return "other";
+  };
+
+  //this is for comment
   const [newComment, setNewComment] = useState("");
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
-  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(
+    null,
+  );
 
   const {
     register,
@@ -76,7 +98,7 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
       description: "",
       category: "TASK",
       priority: "MEDIUM",
-      assigneeId: 0,
+      assigneeId: assignees.length > 0 ? 0 : undefined,
       dueDate: new Date(),
     },
   });
@@ -100,12 +122,12 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
       description: "",
       category: "TASK",
       priority: "MEDIUM",
-      assigneeId: 0,
+      assigneeId: assignees.length > 0 ? 0 : undefined,
       dueDate: new Date(),
     });
   }, [ticket, reset]);
 
-  //this is for comment 
+  //this is for comment
   useEffect(() => {
     if (!isOpen || !ticket?.id) return;
 
@@ -139,6 +161,7 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
     try {
       await createComment(ticket.id, { content: newComment.trim() });
       setNewComment("");
+      await getCommentsByTicketId(ticket.id);
     } finally {
       setIsCommentSubmitting(false);
     }
@@ -157,14 +180,22 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Edit Ticket" : "Create New Ticket"}</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? "Edit Ticket" : "Create New Ticket"}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="ticket-title">Title</Label>
-            <Input id="ticket-title" placeholder="Ticket title" {...register("title")} />
-            {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
+            <Input
+              id="ticket-title"
+              placeholder="Ticket title"
+              {...register("title")}
+            />
+            {errors.title && (
+              <p className="text-sm text-red-500">{errors.title.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -176,7 +207,9 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
               {...register("description")}
             />
             {errors.description && (
-              <p className="text-sm text-red-500">{errors.description.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
@@ -199,7 +232,11 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
                   </Select>
                 )}
               />
-              {errors.category && <p className="text-sm text-red-500">{errors.category.message}</p>}
+              {errors.category && (
+                <p className="text-sm text-red-500">
+                  {errors.category.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -221,7 +258,11 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
                   </Select>
                 )}
               />
-              {errors.priority && <p className="text-sm text-red-500">{errors.priority.message}</p>}
+              {errors.priority && (
+                <p className="text-sm text-red-500">
+                  {errors.priority.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -233,7 +274,11 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
               render={({ field }) => (
                 <Select
                   value={field.value > 0 ? String(field.value) : ""}
-                  onValueChange={(value) => setValue("assigneeId", Number(value), { shouldValidate: true })}
+                  onValueChange={(value) =>
+                    setValue("assigneeId", Number(value), {
+                      shouldValidate: true,
+                    })
+                  }
                   disabled={assignees.length === 0}
                 >
                   <SelectTrigger className="w-full">
@@ -246,7 +291,10 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
                       </SelectItem>
                     ) : (
                       assignees.map((assignee) => (
-                        <SelectItem key={assignee.id} value={String(assignee.id)}>
+                        <SelectItem
+                          key={assignee.id}
+                          value={String(assignee.id)}
+                        >
                           {assignee.name} ({assignee.role})
                         </SelectItem>
                       ))
@@ -256,7 +304,9 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
               )}
             />
             {errors.assigneeId && (
-              <p className="text-sm text-red-500">{errors.assigneeId.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.assigneeId.message}
+              </p>
             )}
           </div>
 
@@ -269,7 +319,9 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
                 setValueAs: (value) => (value ? new Date(value) : undefined),
               })}
             />
-            {errors.dueDate && <p className="text-sm text-red-500">{errors.dueDate.message}</p>}
+            {errors.dueDate && (
+              <p className="text-sm text-red-500">{errors.dueDate.message}</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -277,7 +329,11 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : isEditMode ? "Save Changes" : "Create Ticket"}
+              {isSubmitting
+                ? "Saving..."
+                : isEditMode
+                  ? "Save Changes"
+                  : "Create Ticket"}
             </Button>
           </div>
         </form>
@@ -286,7 +342,9 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
           <div className="border-t pt-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-800">Comments</h3>
-              <span className="text-xs text-gray-500">{comments.length} total</span>
+              <span className="text-xs text-gray-500">
+                {comments.length} total
+              </span>
             </div>
 
             <div className="space-y-2">
@@ -300,7 +358,9 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
                 maxLength={1000}
               />
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">{newComment.length}/1000</p>
+                <p className="text-xs text-gray-500">
+                  {newComment.length}/1000
+                </p>
                 <Button
                   type="button"
                   onClick={handleAddComment}
@@ -309,6 +369,84 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
                   {isCommentSubmitting ? "Adding..." : "Add Comment"}
                 </Button>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ticket-attachments">Attachments</Label>
+              <input
+                id="ticket-attachments"
+                type="file"
+                title="Upload attachment"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    setIsAttachmentUploading(true);
+                    try {
+                      await uploadAttachment({
+                        ticketId: ticket?.id,
+                        file,
+                      });
+                      await getAttachmentsByTicketId(ticket?.id);
+                    } catch (error) {
+                      console.error("Attachment upload failed:", error);
+                      setAttachmentError("Failed to upload attachment");
+                    } finally {
+                      setIsAttachmentUploading(false);
+                    }
+                  }
+                }}
+              />
+              {isAttachmentUploading && (
+                <p className="text-sm text-gray-500">Uploading...</p>
+              )}
+              {attachmentError && (
+                <p className="text-sm text-red-500">{attachmentError}</p>
+              )}
+              <Button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await getAttachmentsByTicketId(ticket?.id);
+                  } catch (error) {
+                    console.error("Failed to refresh attachments:", error);
+                  }
+                }}
+              >
+                Save Attachments
+              </Button>
+              <ul className="space-y-2">
+                {attachments.map((attachment) => {
+                  const type = getFileCategory(attachment.fileType);
+
+                  return (
+                    <li
+                      key={attachment.id}
+                      className="flex items-center gap-3 border p-2 rounded"
+                    >
+                      {type === "image" ? (
+                        <img
+                          src={attachment.fileUrl}
+                          alt={attachment.fileName}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      ) : type === "pdf" ? (
+                        <span className="text-red-500 text-xl">📄</span>
+                      ) : (
+                        <span className="text-gray-500 text-xl">📎</span>
+                      )}
+
+                      <a
+                        href={attachment.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline truncate"
+                      >
+                        {attachment.fileName}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
 
             {commentsError && (
@@ -321,6 +459,7 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
               <p className="text-sm text-gray-500">No comments yet.</p>
             ) : (
               <div className="space-y-2">
+                <Label htmlFor="ticket-comments">Comments</Label>
                 {comments.map((comment) => {
                   const canDelete =
                     user?.id === comment.authorId ||
@@ -328,7 +467,11 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
                     user?.role === "TRIAGE";
 
                   return (
-                    <div key={comment.id} className="rounded border p-3 space-y-2">
+                    <div
+                      key={comment.id}
+                      className="rounded border p-3 space-y-2"
+                      id="ticket-comments"
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-gray-700 truncate">
@@ -347,7 +490,9 @@ function TicketForm({ isOpen, onClose, onSubmit, ticket, assignees }: TicketForm
                             onClick={() => handleDeleteComment(comment.id)}
                             disabled={deletingCommentId === comment.id}
                           >
-                            {deletingCommentId === comment.id ? "Deleting..." : "Delete"}
+                            {deletingCommentId === comment.id
+                              ? "Deleting..."
+                              : "Delete"}
                           </Button>
                         )}
                       </div>
