@@ -402,18 +402,7 @@ function TicketForm({
               {attachmentError && (
                 <p className="text-sm text-red-500">{attachmentError}</p>
               )}
-              <Button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await getAttachmentsByTicketId(ticket?.id);
-                  } catch (error) {
-                    console.error("Failed to refresh attachments:", error);
-                  }
-                }}
-              >
-                Save Attachments
-              </Button>
+
               <ul className="space-y-2">
                 {attachments.map((attachment) => {
                   const type = getFileCategory(attachment.fileType);

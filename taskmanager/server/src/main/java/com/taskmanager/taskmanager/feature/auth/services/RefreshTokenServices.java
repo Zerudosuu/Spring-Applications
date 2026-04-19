@@ -22,6 +22,9 @@ public class RefreshTokenServices {
     @Value("${jwt.refresh-expiration}")
     private Long refreshExpiration;
 
+    @Value("${jwt.refresh-skew-seconds:60}")
+    private Long refreshSkewSeconds;
+
 
     /**
      *
@@ -56,7 +59,7 @@ public class RefreshTokenServices {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new ResourceNotFoundException("Refresh token not found"));
 
-        if (refreshToken.getExpiryDate().isBefore(Instant.now())) {
+        if (refreshToken.getExpiryDate().isBefore(Instant.now().minusSeconds(refreshSkewSeconds))) {
             refreshTokenRepository.delete(refreshToken);
             throw new ResourceNotFoundException("Refresh token not found");
         }

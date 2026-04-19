@@ -57,6 +57,7 @@ public class AuthService {
 
         User user = token.getUser();
         String newAccessToken = jwtUtil.generateToken(user.getEmail());
+        RefreshToken rotatedRefreshToken = refreshTokenServices.createRefreshToken(user);
 
         LoginResponseDTO response = new LoginResponseDTO();
         response.setId(user.getId());
@@ -64,7 +65,7 @@ public class AuthService {
         response.setEmail(user.getEmail());
         response.setRole(user.getRole());
         response.setAccessToken(newAccessToken);
-        response.setRefreshToken(refreshToken);
+        response.setRefreshToken(rotatedRefreshToken.getToken());
         response.setMessage("Token refreshed successfully");
         return response;
 

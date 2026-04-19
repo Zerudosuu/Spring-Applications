@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import axiosInstance from "@/api/axiosInstance";
 import useAuthStore from "@/store/authStore";
+import {
+  isAccessTokenExpiringSoon,
+  refreshAuthTokens,
+} from "@/api/authRefresh";
 
 const useAppInit = () => {
-  const { accessToken, refreshToken, setAuth, clearAuth } = useAuthStore();
+  const { accessToken, refreshToken, clearAuth } = useAuthStore();
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
@@ -13,33 +16,22 @@ const useAppInit = () => {
         return;
       }
 
-      if (accessToken) {
+      if (accessToken && !isAccessTokenExpiringSoon(accessToken)) {
         setIsInitializing(false);
         return;
       }
 
       try {
-        const response = await axiosInstance.post("/auth/refresh", {
-          refreshToken,
-        });
-
-        const {
-          accessToken: newAccessToken,
-          refreshToken: newRefreshToken,
-          ...user
-        } = response.data;
-
-        setAuth(user, newAccessToken, newRefreshToken);
-      } catch (error) {
+        await refreshAuthTokens();
+      } catch {
         clearAuth();
-        throw error;
       } finally {
         setIsInitializing(false);
       }
     };
 
     initializeApp();
-  }, []);
+  }, [accessToken, refreshToken, clearAuth]);
 
   return { isInitializing };
 };
