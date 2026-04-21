@@ -33,6 +33,7 @@ public class NotificationListener {
         log.info("Sending notification to assignee: {}", event.getAssignee().getName());
 
 
+
     //notify assignee they have been assigned a ticket
     notificationService.createNotification(
             event.getAssignee(),

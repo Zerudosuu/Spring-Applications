@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ticketSchema, type TicketFormData } from "@/schemas/ticketSchema";
@@ -340,37 +340,6 @@ function TicketForm({
 
         {isEditMode && ticket?.id && (
           <div className="border-t pt-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-800">Comments</h3>
-              <span className="text-xs text-gray-500">
-                {comments.length} total
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ticket-comment">Add a comment</Label>
-              <Textarea
-                id="ticket-comment"
-                placeholder="Write a comment"
-                rows={3}
-                value={newComment}
-                onChange={(event) => setNewComment(event.target.value)}
-                maxLength={1000}
-              />
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">
-                  {newComment.length}/1000
-                </p>
-                <Button
-                  type="button"
-                  onClick={handleAddComment}
-                  disabled={isCommentSubmitting || isCommentDisabled}
-                >
-                  {isCommentSubmitting ? "Adding..." : "Add Comment"}
-                </Button>
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="ticket-attachments">Attachments</Label>
               <input
@@ -438,6 +407,36 @@ function TicketForm({
               </ul>
             </div>
 
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800">Comments</h3>
+              <span className="text-xs text-gray-500">
+                {comments.length} total
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <Textarea
+                id="ticket-comment"
+                placeholder="Write a comment"
+                rows={3}
+                value={newComment}
+                onChange={(event) => setNewComment(event.target.value)}
+                maxLength={1000}
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  {newComment.length}/1000
+                </p>
+                <Button
+                  type="button"
+                  onClick={handleAddComment}
+                  disabled={isCommentSubmitting || isCommentDisabled}
+                >
+                  {isCommentSubmitting ? "Adding..." : "Add Comment"}
+                </Button>
+              </div>
+            </div>
+
             {commentsError && (
               <p className="text-sm text-red-500">{commentsError}</p>
             )}
@@ -448,7 +447,6 @@ function TicketForm({
               <p className="text-sm text-gray-500">No comments yet.</p>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="ticket-comments">Comments</Label>
                 {comments.map((comment) => {
                   const canDelete =
                     user?.id === comment.authorId ||
