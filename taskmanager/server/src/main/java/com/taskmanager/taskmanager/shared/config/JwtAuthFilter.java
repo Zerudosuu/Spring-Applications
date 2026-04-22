@@ -28,19 +28,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-
         // Step 1 — get Authorization header
         String authHeader = request.getHeader("Authorization");
+        String token = null;
 
-        //Step 2- Check if the header exist and starts with Bearer
-        // Correct — if null OR doesn't start with Bearer, skip
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Step 2 — prefer Bearer header for normal API requests
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
+
+        // Step 3 — SSE fallback: EventSource can't set Authorization header
+        if (token == null && "/api/notifications/stream".equals(request.getRequestURI())) {
+            token = request.getParameter("accessToken");
+        }
+
+        if (token == null || token.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        //step 3 - extract token
-        String token = authHeader.substring(7);
 
         try {
             //step 4- extract email from token

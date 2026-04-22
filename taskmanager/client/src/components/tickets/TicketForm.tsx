@@ -27,6 +27,7 @@ import {
 import useAttachment from "@/hooks/useAttachment";
 
 interface TicketFormProps {
+  ticketId?: number;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: TicketRequest) => Promise<void>;

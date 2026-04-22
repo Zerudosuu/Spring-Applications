@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import axiosInstance from "@/api/axiosInstance";
+import useAuthStore from "@/store/authStore";
 
 export interface Notification {
   id: number;
@@ -11,13 +13,19 @@ export interface Notification {
 
 const useNotification = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   useEffect(() => {
-    const eventSource = new EventSource(
-      "http://localhost:8080/api/notifications/stream",
-      { withCredentials: true },
-    );
-    //TODO: Fix Stream
+    if (!accessToken) return;
+
+    const apiBaseUrl = (
+      import.meta.env.VITE_API_URL || "http://localhost:8080/api"
+    ).replace(/\/$/, "");
+
+    // Native EventSource cannot set Authorization header, so send token in query string.
+    const streamUrl = `${apiBaseUrl}/notifications/stream?accessToken=${encodeURIComponent(accessToken)}`;
+    const eventSource = new EventSource(streamUrl);
+
     eventSource.addEventListener("notification", (event) => {
       const data = JSON.parse(event.data) as Notification;
       setNotifications((prev) => [data, ...prev]);
@@ -25,19 +33,16 @@ const useNotification = () => {
 
     eventSource.onerror = () => {
       console.error("Error with notification stream");
-      eventSource.close();
     };
 
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [accessToken]);
 
   const markAsRead = async (id: number) => {
     try {
-      await fetch(`/api/notifications/${id}`, {
-        method: "PUT",
-      });
+      await axiosInstance.put(`/notifications/${id}`);
       setNotifications((prev) =>
         prev.map((notification) =>
           notification.id === id
@@ -52,9 +57,8 @@ const useNotification = () => {
 
   const fetchUnreadNotifications = async () => {
     try {
-      const response = await fetch("/api/notifications/unread");
-      const data = await response.json();
-      setNotifications(data);
+      const response = await axiosInstance.get<Notification[]>("/notifications/unread");
+      setNotifications(response.data);
     } catch (error) {
       console.error("Failed to fetch unread notifications", error);
     }
