@@ -57,14 +57,31 @@ const useNotification = () => {
 
   const fetchUnreadNotifications = async () => {
     try {
-      const response = await axiosInstance.get<Notification[]>("/notifications/unread");
+      const response = await axiosInstance.get<Notification[]>(
+        "/notifications/unread",
+      );
       setNotifications(response.data);
     } catch (error) {
       console.error("Failed to fetch unread notifications", error);
     }
   };
 
-  return { notifications, markAsRead, fetchUnreadNotifications };
+  const handleNotificationClick = async (notification: Notification) => {
+    // This function can be used to navigate to the ticket details page when a notification is clicked.
+
+    try {
+      await markAsRead(notification.id);
+    } catch (error) {
+      console.error("Failed to handle notification click", error);
+    }
+  };
+
+  return {
+    notifications,
+    markAsRead,
+    fetchUnreadNotifications,
+    handleNotificationClick,
+  };
 };
 
 export default useNotification;

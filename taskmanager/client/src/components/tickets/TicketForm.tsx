@@ -27,7 +27,6 @@ import {
 import useAttachment from "@/hooks/useAttachment";
 
 interface TicketFormProps {
-  ticketId?: number;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: TicketRequest) => Promise<void>;
@@ -152,6 +151,17 @@ function TicketForm({
     };
 
     await onSubmit(payload);
+    // Reset the form to default values
+    reset({
+      title: "",
+      description: "",
+      category: "TASK",
+      priority: "MEDIUM",
+      assigneeId: assignees.length > 0 ? 0 : undefined,
+      dueDate: new Date(),
+    });
+
+    // Close the form dialog
     onClose();
   };
 
