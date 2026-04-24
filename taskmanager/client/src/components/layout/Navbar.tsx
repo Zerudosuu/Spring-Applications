@@ -6,25 +6,16 @@ import { LogOut, CheckSquare } from "lucide-react";
 import { useState } from "react";
 import useNotification from "@/hooks/useNotification";
 import { Bell } from "lucide-react";
+import NotificationList from "../notification/NotificationList";
 
 function Navbar() {
   const { user } = useAuthStore();
   const { logout } = useAuth();
-  const { notifications, markAsRead } = useNotification();
+  const { notifications, handleNotificationClick } = useNotification();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  //TODO: Implement the handleMarkAsRead and fix the authorization on getting the ticket via ID to show the details in the notification dropdown. Also, consider adding a link to the ticket details page in the notification message for better user experience.
 
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
-  };
-
-  const handleMarkAsRead = async (id: number) => {
-    try {
-      await markAsRead(id);
-    } catch (error) {
-      console.error("Failed to mark notification as read", error);
-    }
   };
 
   return (
@@ -65,21 +56,10 @@ function Navbar() {
                     No notifications
                   </li>
                 ) : (
-                  notifications.map((notification) => (
-                    <li
-                      key={notification.id}
-                      className="p-2 text-sm hover:bg-gray-100 cursor-pointer"
-                      onClick={() => handleMarkAsRead(notification.id)}
-                    >
-                      <p className="font-medium text-gray-800">
-                        {notification.ticketTitle}
-                      </p>
-                      <p className="text-gray-600">{notification.message}</p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(notification.createdAt).toLocaleString()}
-                      </p>
-                    </li>
-                  ))
+                  <NotificationList
+                    notifications={notifications}
+                    onNotificationClick={handleNotificationClick}
+                  />
                 )}
               </ul>
             </div>

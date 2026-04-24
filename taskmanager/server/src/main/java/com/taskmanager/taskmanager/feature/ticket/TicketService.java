@@ -112,16 +112,6 @@ public class TicketService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User Not Found"));
 
-        // check visibility — admin sees all
-        // others only see tickets they are involved in
-        boolean isAdmin = user.getRole() == Role.ADMIN;
-        boolean isReporter = ticket.getReporter().getId().equals(user.getId());
-        boolean isAssignee = ticket.getAssignee().getId().equals(user.getId());
-
-        if(!isAdmin && !isReporter && !isAssignee) {
-            throw new AccessDeniedException("You do not have access to this ticket");
-        }
-
         return toResponseDTO(ticket);
 
     }

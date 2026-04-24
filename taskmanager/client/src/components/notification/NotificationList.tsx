@@ -1,9 +1,16 @@
 import React, { useState } from "react";
-import useNotification from "@/hooks/useNotification";
+import type { Notification } from "@/hooks/useNotification";
 import TicketFormPreviewModal from "../tickets/TicketFormPreviewModal";
 
-const NotificationList = () => {
-  const { notifications, handleNotificationClick } = useNotification();
+interface NotificationListProps {
+  notifications: Notification[];
+  onNotificationClick: (notification: Notification) => Promise<void> | void;
+}
+
+const NotificationList = ({
+  notifications,
+  onNotificationClick,
+}: NotificationListProps) => {
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
 
   const openForm = (ticketId: number) => {
@@ -20,23 +27,30 @@ const NotificationList = () => {
         {notifications.map((notification) => (
           <li
             key={notification.id}
+            className="p-2 text-sm hover:bg-gray-100 cursor-pointer"
             onClick={() => {
-              handleNotificationClick(notification);
               openForm(notification.ticketId);
+              onNotificationClick(notification);
             }}
           >
-            {notification.message}
+            <p className="font-medium text-gray-800">
+              {notification.ticketTitle}
+            </p>
+            <p className="text-gray-600">{notification.message}</p>
+            <p className="text-xs text-gray-400">
+              {new Date(notification.createdAt).toLocaleString()}
+            </p>
           </li>
         ))}
       </ul>
 
-      {selectedTicketId !== null && (
+      {/* {selectedTicketId !== null && (
         <TicketFormPreviewModal
           isOpen={!!selectedTicketId}
           ticketId={selectedTicketId}
           onClosed={closeForm}
         />
-      )}
+      )} */}
     </div>
   );
 };

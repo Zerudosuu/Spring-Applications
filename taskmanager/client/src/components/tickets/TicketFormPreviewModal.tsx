@@ -29,11 +29,11 @@ const TicketFormPreviewModal = ({
     }
   };
 
-  // useEffect(() => {
-  //   if (isOpen) {
-  //     handleFetchTicketById(ticketId);
-  //   }
-  // }, [isOpen, ticketId]);
+  useEffect(() => {
+    if (isOpen) {
+      handleFetchTicketById(ticketId);
+    }
+  }, [isOpen, ticketId, getTicketById]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClosed}>

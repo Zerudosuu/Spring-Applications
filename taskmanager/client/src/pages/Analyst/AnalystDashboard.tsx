@@ -54,7 +54,6 @@ import {
   Users,
 } from "lucide-react";
 
-
 function AnalystDashboard() {
   const { user } = useAuthStore();
   const {
@@ -66,14 +65,11 @@ function AnalystDashboard() {
     updateTicketStatus,
   } = useTickets();
 
-
-   const {
-      users,
-      getAssignableUsers
-    } = useUsers();
+  const { users, getAssignableUsers } = useUsers();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
   const isAnalyst = user?.role === "USER"; // Assuming "USER" role is for analysts
   const stats = useMemo(
     () => ({
@@ -88,7 +84,7 @@ function AnalystDashboard() {
   );
 
   const loadAnalystData = useCallback(async () => {
-    await Promise.all([getAssignedTickets(),getAssignableUsers()]);
+    await Promise.all([getAssignedTickets(), getAssignableUsers()]);
   }, [getAssignedTickets, getAssignableUsers]);
 
   useEffect(() => {
