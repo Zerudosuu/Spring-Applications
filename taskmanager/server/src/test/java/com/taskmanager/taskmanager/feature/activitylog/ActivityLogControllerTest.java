@@ -1,8 +1,8 @@
-package com.taskmanager.taskmanager.feature.task;
-
+package com.taskmanager.taskmanager.feature.activitylog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taskmanager.taskmanager.feature.auth.repository.RefreshTokenRepository;
+import com.taskmanager.taskmanager.feature.ticket.TicketRepository;
 import com.taskmanager.taskmanager.feature.user.UserRepository;
 import com.taskmanager.taskmanager.feature.user.dto.UserRequestDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,32 +21,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class TaskControllerTest {
+public class ActivityLogControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
-    private TaskRepository taskRepository;
+    private TicketRepository ticketRepository;
 
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String accessToken;
 
     @BeforeEach
     void setUp() throws Exception {
 
-
-        // wipe database before each test so tests don't affect each other
-        taskRepository.deleteAll();
+        //wipe database before each tests so it will not affect others
+        ticketRepository.deleteAll();
+        activityLogRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
+
 
         //Create user then login to get the token
         UserRequestDTO userRequestDTO = new UserRequestDTO();
@@ -73,20 +77,20 @@ public class TaskControllerTest {
                 .getContentAsString();
 
         accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
+
     }
 
     @Test
-    void getTasks_Return200_WithValidToken() throws Exception {
-        mockMvc.perform(get("/api/tasks/user/1")
+    void getActivityLogs_Return200_WithValidToken() throws Exception {
+        mockMvc.perform(get("/api/activity-logs/ticket/1")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void getTasks_Returns403_WithoutToken() throws Exception {
-        mockMvc.perform(get("/api/tasks/user/1"))
+    void getActivityLogs_Return401_WithoutToken() throws Exception {
+        mockMvc.perform(get("/api/activity-logs/ticket/1"))
                 .andExpect(status().isUnauthorized());
     }
-
 
 }

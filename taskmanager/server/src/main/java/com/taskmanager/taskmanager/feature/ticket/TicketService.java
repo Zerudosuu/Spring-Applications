@@ -1,6 +1,7 @@
 package com.taskmanager.taskmanager.feature.ticket;
 
 import com.taskmanager.taskmanager.feature.activitylog.ActivityLogRepository;
+import com.taskmanager.taskmanager.feature.attachment.AttachmentRepository;
 import com.taskmanager.taskmanager.feature.comment.CommentRepository;
 import com.taskmanager.taskmanager.feature.notification.NotificationRepository;
 import com.taskmanager.taskmanager.feature.ticket.dto.TicketRequestDTO;
@@ -30,6 +31,7 @@ public class TicketService {
     private final CommentRepository commentRepository;
     private final ActivityLogRepository activityLogRepository;
     private final NotificationRepository notificationRepository;
+    private final AttachmentRepository attachmentRepository;
 
     private final ApplicationEventPublisher eventPublisher;
     // TODO: ─── CREATE ──────────────────────────────────────────────────
@@ -229,7 +231,7 @@ public class TicketService {
             throw new AccessDeniedException("Only admins can delete tickets");
         }
 
-
+        attachmentRepository.deleteByTicketId(id);
         commentRepository.deleteByTicketId(id);
         activityLogRepository.deleteByTicketId(id);
         notificationRepository.deleteByTicketId(id);

@@ -152,7 +152,7 @@ function AnalystDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 border border-4">
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-gray-900">
@@ -193,8 +193,8 @@ function AnalystDashboard() {
         </div>
       )}
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
+      <div className="space-y-4 ">
+        <div className="flex items-center justify-between gap-3 border-2 border-black">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">All Tickets</h2>
             <p className="text-sm text-gray-500">
