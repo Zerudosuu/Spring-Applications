@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { Notification } from "@/hooks/useNotification";
-import TicketFormPreviewModal from "../tickets/TicketFormPreviewModal";
 
 interface NotificationListProps {
   notifications: Notification[];
@@ -11,14 +10,10 @@ const NotificationList = ({
   notifications,
   onNotificationClick,
 }: NotificationListProps) => {
-  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  const [, setSelectedTicketId] = useState<number | null>(null);
 
   const openForm = (ticketId: number) => {
     setSelectedTicketId(ticketId);
-  };
-
-  const closeForm = () => {
-    setSelectedTicketId(null);
   };
 
   return (

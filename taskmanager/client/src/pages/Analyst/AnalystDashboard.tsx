@@ -8,7 +8,6 @@
 // 4: also to see the stats of the tickets assigned to them, such as how many are open, in progress, resolved, etc.
 // 5: Also it can re assigned or pass the ticket to other analyst if they are not able to resolve it, or if they need help from other team members.
 
-import React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useAuthStore from "@/store/authStore";
 import useTickets, {
@@ -21,38 +20,9 @@ import TicketList from "@/components/tickets/TicketList";
 import TicketForm from "@/components/tickets/TicketForm";
 import TaskSkeleton from "@/components/tasks/TaskSkeleton";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Plus,
-  RefreshCw,
-  Shield,
-  Ticket as TicketIcon,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+
+import { RefreshCw, Shield } from "lucide-react";
 
 function AnalystDashboard() {
   const { user } = useAuthStore();
@@ -152,7 +122,7 @@ function AnalystDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 border border-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-gray-900">
@@ -194,7 +164,7 @@ function AnalystDashboard() {
       )}
 
       <div className="space-y-4 ">
-        <div className="flex items-center justify-between gap-3 border-2 border-black">
+        <div className="flex items-center justify-between gap-3 ">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">All Tickets</h2>
             <p className="text-sm text-gray-500">

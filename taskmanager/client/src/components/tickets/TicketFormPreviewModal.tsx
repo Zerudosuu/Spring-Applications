@@ -1,5 +1,5 @@
 import type { Ticket } from "@/hooks/useTicket";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
