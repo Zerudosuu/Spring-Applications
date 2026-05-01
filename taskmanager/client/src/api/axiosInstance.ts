@@ -1,6 +1,9 @@
 import axios from "axios";
 import useAuthStore from "@/store/authStore";
-import { isAccessTokenExpiringSoon, refreshAuthTokens } from "@/api/authRefresh";
+import {
+  isAccessTokenExpiringSoon,
+  refreshAuthTokens,
+} from "@/api/authRefresh";
 
 /**
  * base axios instance for pointing to Spring Boot API
@@ -9,9 +12,10 @@ import { isAccessTokenExpiringSoon, refreshAuthTokens } from "@/api/authRefresh"
  * every API call in your app will use this instance
  */
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
+  baseURL: import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/api`
+    : "http://localhost:8080/api",
 });
-
 //request interceptor - attaches access token to every request
 
 /**
@@ -41,7 +45,11 @@ axiosInstance.interceptors.request.use(
 
     // if a token exists attach it to the Authorization header
     // Spring Boot's JwtAuthFilter reads this header on every request
-    if (!isRefreshRequest && accessToken && isAccessTokenExpiringSoon(accessToken)) {
+    if (
+      !isRefreshRequest &&
+      accessToken &&
+      isAccessTokenExpiringSoon(accessToken)
+    ) {
       const { accessToken: renewedAccessToken } = await refreshAuthTokens();
       config.headers = config.headers || {};
       config.headers["Authorization"] = `Bearer ${renewedAccessToken}`;
