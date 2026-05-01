@@ -82,7 +82,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:3000",              // React dev server
                 "http://localhost:5173",              // Vite dev server
-                "https://your-app.vercel.app"         // production frontend — update this later
+                "https://spring-applications.vercel.app"         // production frontend — update this later
         ));
 
         // allowed HTTP methods
