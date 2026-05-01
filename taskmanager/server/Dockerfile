@@ -14,5 +14,5 @@ RUN mvn clean install
 #
 FROM eclipse-temurin:25-jdk-alpine
 VOLUME /tmp
-COPY target/*.jar taskmanager-0.0.1-SNAPSHOT.jar
+COPY /target/*.jar taskmanager-0.0.1-SNAPSHOT.jar
 ENTRYPOINT ["java","-jar","/app.jar"]
