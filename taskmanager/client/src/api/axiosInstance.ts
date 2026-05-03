@@ -12,9 +12,8 @@ import {
  * every API call in your app will use this instance
  */
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL
-    ? `${import.meta.env.VITE_API_URL}/api`
-    : "http://localhost:8080/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
+ 
 });
 //request interceptor - attaches access token to every request
 
@@ -81,7 +80,10 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // don't try to refresh tokens for auth endpoints (login, logout)
+    const isAuthEndpoint = originalRequest?.url?.includes("/auth/login") || originalRequest?.url?.includes("/auth/logout");
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       // Attempt token refresh
       originalRequest._retry = true;
 
@@ -93,6 +95,8 @@ axiosInstance.interceptors.response.use(
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
+        // If refresh fails while trying to recover from an authenticated request,
+        // redirect to login so the user can authenticate again.
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }
