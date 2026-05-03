@@ -40,12 +40,20 @@ axiosInstance.interceptors.request.use(
     // localStorage is the browser's built-in key-value storage
     // we store the token here after login so it persists on page refresh
     const { accessToken } = useAuthStore.getState(); // getState() allows us to access the current state of the auth store without using the hook
-    const isRefreshRequest = config.url?.includes("/auth/refresh");
+    const isAuthRequest =
+      config.url?.includes("/auth/login") ||
+      config.url?.includes("/auth/logout") ||
+      config.url?.includes("/auth/refresh");
+
+    // Never attach Authorization to public auth endpoints.
+    if (isAuthRequest && config.headers?.Authorization) {
+      delete config.headers.Authorization;
+    }
 
     // if a token exists attach it to the Authorization header
     // Spring Boot's JwtAuthFilter reads this header on every request
     if (
-      !isRefreshRequest &&
+      !isAuthRequest &&
       accessToken &&
       isAccessTokenExpiringSoon(accessToken)
     ) {
@@ -55,7 +63,7 @@ axiosInstance.interceptors.request.use(
       return config;
     }
 
-    if (!isRefreshRequest && accessToken) {
+    if (!isAuthRequest && accessToken) {
       config.headers = config.headers || {};
       config.headers["Authorization"] = `Bearer ${accessToken}`;
     }
