@@ -18,6 +18,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -32,6 +34,9 @@ public class SecurityConfig {
 
     @Value("${allowed.origin.prod}")
     private String allowedOriginProd;
+
+    @Value("${allowed.origin.preview-pattern:https://spring-applications-*-ronald-salvadors-projects.vercel.app}")
+    private String allowedOriginPreviewPattern;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -48,6 +53,9 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+
+                        // CORS preflight requests should not require authentication
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // public endpoints — no token needed
                         .requestMatchers("/api/auth/**").permitAll()
@@ -78,12 +86,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // allowed origins — local dev and production frontend
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000",              // React dev server
-                "http://localhost:5173",              // Vite dev server
-                "https://spring-applications.vercel.app"// production frontend — update this later
-        ));
+        // Allow local, production, and Vercel preview origins.
+        List<String> allowedOriginPatterns = Stream.of(
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        allowedOriginLocal,
+                        allowedOriginProd,
+                        allowedOriginPreviewPattern
+                )
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .distinct()
+                .toList();
+        config.setAllowedOriginPatterns(allowedOriginPatterns);
 
         // allowed HTTP methods
         config.setAllowedMethods(List.of(
