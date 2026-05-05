@@ -13,7 +13,6 @@ import {
  */
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
- 
 });
 //request interceptor - attaches access token to every request
 
@@ -89,9 +88,15 @@ axiosInstance.interceptors.response.use(
     }
 
     // don't try to refresh tokens for auth endpoints (login, logout)
-    const isAuthEndpoint = originalRequest?.url?.includes("/auth/login") || originalRequest?.url?.includes("/auth/logout");
+    const isAuthEndpoint =
+      originalRequest?.url?.includes("/auth/login") ||
+      originalRequest?.url?.includes("/auth/logout");
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isAuthEndpoint
+    ) {
       // Attempt token refresh
       originalRequest._retry = true;
 
