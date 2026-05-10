@@ -12,7 +12,6 @@ import AdminDashboard from "./pages/Admin/AdminDashboard";
 import TriageDashboard from "./pages/Triage/TriageDashboard";
 import AnalystDashboard from "./pages/Analyst/AnalystDashboard";
 
-
 function App() {
   const { isInitializing } = useAppInit();
   const { user } = useAuthStore();
@@ -55,13 +54,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                {user?.role === "ADMIN" ? (<AdminDashboard />) 
-                : user?.role ==="TRIAGE" ? (<TriageDashboard />) 
-                : user?.role === "USER" ? (<AnalystDashboard />) 
-                : ( <DashboardPage />)
-                }
-
-                
+                {user?.role === "ADMIN" ? (
+                  <AdminDashboard />
+                ) : user?.role === "TRIAGE" ? (
+                  <TriageDashboard />
+                ) : user?.role === "USER" ? (
+                  <AnalystDashboard />
+                ) : (
+                  <LoginPage />
+                )}
               </Layout>
             </ProtectedRoute>
           }
