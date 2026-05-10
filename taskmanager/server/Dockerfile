@@ -1,11 +1,14 @@
 # Build stage
-FROM maven:3.9.4-eclipse-temurin-21 AS build
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 COPY . .
-RUN mvn clean package -DskipTests
+RUN apt-get update && apt-get install -y maven
+RUN mvn -B clean package -DskipTests
 
-# Run stage
-FROM eclipse-temurin:21-jdk-alpine
+# Package stage
+FROM eclipse-temurin:25-jdk-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","app.jar"]
+EXPOSE 8080
+ENV SPRING_PROFILES_ACTIVE=prod
+ENTRYPOINT ["java","-Dserver.port=${PORT:-8080}","-jar","/app.jar"]
