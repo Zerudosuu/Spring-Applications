@@ -1,14 +1,13 @@
 # Build stage
-FROM eclipse-temurin:25-jdk AS build
+FROM maven:3.9.4-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY . .
-RUN apt-get update && apt-get install -y maven
-RUN mvn -B clean package -DskipTests
+COPY pom.xml /app/
+COPY src /app/src/
+RUN mvn clean package -DskipTests
 
 # Package stage
-FROM eclipse-temurin:25-jdk-alpine
+FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/target/springboot-taskmanager.jar /app/springboot-taskmanager.jar
 EXPOSE 8080
-ENV SPRING_PROFILES_ACTIVE=prod
-ENTRYPOINT ["java","-Dserver.port=${PORT:-8080}","-jar","app.jar"]
+ENTRYPOINT ["java", "-jar", "springboot-taskmanager.jar"]
