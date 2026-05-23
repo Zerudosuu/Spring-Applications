@@ -4,6 +4,7 @@ package com.taskmanager.taskmanager.feature.user;
 import com.taskmanager.taskmanager.feature.user.dto.UserRequestDTO;
 import com.taskmanager.taskmanager.feature.user.dto.UserResponseDTO;
 import com.taskmanager.taskmanager.shared.enums.Role;
+import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @PostMapping
     public ResponseEntity<UserResponseDTO> create(@RequestBody @Valid UserRequestDTO userRequestDTO) {
@@ -55,5 +57,29 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDTO> delete(@PathVariable Long id) {
         return ResponseEntity.ok(userService.deleteUser(id));
+    }
+
+    //EmailService
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        try {
+            userService.verifyEmail(token);
+            return ResponseEntity.ok("Email verified successfully! You can now log in.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(@RequestParam String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getEmailVerified()) {
+            return ResponseEntity.badRequest().body("Email already verified");
+        }
+
+        userService.generateAndSendVerificationToken(user);
+        return ResponseEntity.ok("Verification email sent");
     }
 }

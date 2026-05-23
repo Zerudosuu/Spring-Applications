@@ -2,10 +2,7 @@ package com.taskmanager.taskmanager.feature.user.dto;
 
 
 import com.taskmanager.taskmanager.shared.enums.Role;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -13,11 +10,13 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 public class UserResponseDTO {
-
     private Long id;
     private String name;
     private String email;
     private Role role;
+    private Boolean emailVerified;
+    private LocalDateTime emailVerifiedAt;
     private LocalDateTime createdDate;
 }

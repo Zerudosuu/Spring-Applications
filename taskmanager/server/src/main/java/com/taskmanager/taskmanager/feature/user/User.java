@@ -43,6 +43,12 @@ public class User implements UserDetails {
     @Column(updatable = true)
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    private Boolean emailVerified = false;
+
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
     @PrePersist
     private void onCreate() {
         this.createdAt = LocalDateTime.now();

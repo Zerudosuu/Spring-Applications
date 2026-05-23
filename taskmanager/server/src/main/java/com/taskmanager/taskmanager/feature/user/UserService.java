@@ -1,6 +1,9 @@
 package com.taskmanager.taskmanager.feature.user;
 
 
+import com.taskmanager.taskmanager.feature.auth.EmailVerificationToken;
+import com.taskmanager.taskmanager.feature.auth.repository.EmailVerificationTokenRepository;
+import com.taskmanager.taskmanager.feature.auth.services.EmailService;
 import com.taskmanager.taskmanager.feature.user.dto.UserMapper;
 import com.taskmanager.taskmanager.feature.user.dto.UserRequestDTO;
 import com.taskmanager.taskmanager.feature.user.dto.UserResponseDTO;
@@ -12,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +26,8 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationTokenRepository tokenRepository;
+    private final EmailService emailService;
 
 
     // Convert Entity → ResponseDTO
@@ -53,15 +60,23 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         if (userRepository.count() == 0) {
             user.setRole(Role.ADMIN);
+            user.setEmailVerified(true); // First user is auto-verified admin
+            user.setEmailVerifiedAt(LocalDateTime.now());
         } else {
             user.setRole(Role.USER);
+            user.setEmailVerified(false);
         }
 
         User saved = userRepository.save(user);
         // uncomment if using mapper
 //        return userMapper.toDTo(saved);
 
-     return toResponseDTO(saved);
+
+        // Send verification email only for non-admin users
+        if (!saved.getEmailVerified()) {
+            generateAndSendVerificationToken(saved);
+        }
+        return toResponseDTO(saved);
     }
 
     public UserResponseDTO updateUserRole(Long id, Role role) {
@@ -69,7 +84,7 @@ public class UserService {
         user.setRole(role);
         return toResponseDTO(userRepository.save(user));
         // uncomment if using mapper
-     // return userMapper.toDTO(userRepository.save(user));
+        // return userMapper.toDTO(userRepository.save(user));
     }
 
     public UserResponseDTO getUserById(Long id) {
@@ -105,4 +120,50 @@ public class UserService {
     public List<UserResponseDTO> getAllUsersByRole(Role role) {
         return userRepository.findByRole(role).stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
+
+    //for email
+    public void generateAndSendVerificationToken(User user) {
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiryDate = LocalDateTime.now().plusHours(24);
+
+        EmailVerificationToken verificationToken = EmailVerificationToken.builder()
+                .token(token)
+                .user(user)
+                .expiryDate(expiryDate)
+                .used(false)
+                .build();
+
+        tokenRepository.save(verificationToken);
+
+        // Send email (you'll need to pass the baseUrl from controller or config)
+        emailService.sendVerificationEmail(user.getEmail(), token, "http://localhost:5173");
+    }
+
+    public UserResponseDTO verifyEmail(String token) {
+        EmailVerificationToken verificationToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid verification token"));
+
+        if (verificationToken.isExpired()) {
+            throw new IllegalArgumentException("Verification token has expired");
+        }
+
+        if (verificationToken.getUsed()) {
+            throw new IllegalArgumentException("Token already used");
+        }
+
+        User user = verificationToken.getUser();
+        user.setEmailVerified(true);
+        user.setEmailVerifiedAt(LocalDateTime.now());
+
+        verificationToken.setUsed(true);
+        tokenRepository.save(verificationToken);
+
+        User savedUser = userRepository.save(user);
+
+        // Send welcome email
+        emailService.sendWelcomeEmail(user.getEmail(), user.getName());
+
+        return toResponseDTO(savedUser);
+    }
+
 }
