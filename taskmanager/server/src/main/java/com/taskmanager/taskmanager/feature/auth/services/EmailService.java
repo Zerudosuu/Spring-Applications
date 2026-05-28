@@ -12,7 +12,8 @@ public class EmailService {
     private final JavaMailSender mailSender;
 
     public void sendVerificationEmail(String to, String token, String baseUrl) {
-        String verificationUrl = baseUrl + "/api/auth/verify-email?token=" + token;
+        String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        String verificationUrl = normalizedBaseUrl + "/api/users/verify-email?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);

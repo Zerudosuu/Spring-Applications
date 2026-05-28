@@ -12,6 +12,7 @@ import com.taskmanager.taskmanager.shared.exception.DuplicateResourceException;
 import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationTokenRepository tokenRepository;
     private final EmailService emailService;
+
+    @Value("${app.base-url:http://localhost:8080}")
+    private String appBaseUrl;
 
 
     // Convert Entity → ResponseDTO
@@ -136,7 +140,7 @@ public class UserService {
         tokenRepository.save(verificationToken);
 
         // Send email (you'll need to pass the baseUrl from controller or config)
-        emailService.sendVerificationEmail(user.getEmail(), token, "http://localhost:5173");
+        emailService.sendVerificationEmail(user.getEmail(), token, appBaseUrl);
     }
 
     public UserResponseDTO verifyEmail(String token) {
