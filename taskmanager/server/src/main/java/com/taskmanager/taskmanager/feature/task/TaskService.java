@@ -49,7 +49,15 @@ public class TaskService {
         return task;
     }
 
-    public TaskResponseDTO createTask(TaskRequestDTO dto) {
+    public TaskResponseDTO createTask(TaskRequestDTO dto, Authentication authentication) {
+        User requester = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (requester.getRole() != com.taskmanager.taskmanager.shared.enums.Role.ADMIN
+                && !requester.getId().equals(dto.getUserId())) {
+            throw new AccessDeniedException("You can only create tasks for yourself");
+        }
+
         User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Task saved = taskRepository.save(toEntity(dto, user));
 
@@ -58,16 +66,26 @@ public class TaskService {
 
     public TaskResponseDTO getTaskById(Long taskId, Authentication authentication) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+        User requester = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // ownership check — is this task owned by the requesting user?
-        if (!task.getUser().getEmail().equals(authentication.getName())) {
+        if (requester.getRole() != com.taskmanager.taskmanager.shared.enums.Role.ADMIN
+                && !task.getUser().getId().equals(requester.getId())) {
             throw new AccessDeniedException("You do not have access to this task");
         }
 
         return toResponseDto(task);
     }
 
-    public List<TaskResponseDTO> getTasksByUser(Long userId, TaskStatus status, Priority priority) {
+    public List<TaskResponseDTO> getTasksByUser(Long userId, TaskStatus status, Priority priority, Authentication authentication) {
+        User requester = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (requester.getRole() != com.taskmanager.taskmanager.shared.enums.Role.ADMIN
+                && !requester.getId().equals(userId)) {
+            throw new AccessDeniedException("You can only view your own tasks");
+        }
+
         List<Task> tasks;
 
         if (status != null && priority != null) {
@@ -83,20 +101,43 @@ public class TaskService {
         return tasks.stream().map(this::toResponseDto).collect(Collectors.toList());
     }
 
-    public TaskResponseDTO updateTask(Long taskId, TaskRequestDTO dto) {
+    public TaskResponseDTO updateTask(Long taskId, TaskRequestDTO dto, Authentication authentication) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+        User requester = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (requester.getRole() != com.taskmanager.taskmanager.shared.enums.Role.ADMIN
+                && !task.getUser().getId().equals(requester.getId())) {
+            throw new AccessDeniedException("You do not have permission to update this task");
+        }
+
+        if (requester.getRole() != com.taskmanager.taskmanager.shared.enums.Role.ADMIN
+                && !requester.getId().equals(dto.getUserId())) {
+            throw new AccessDeniedException("You can only update your own task");
+        }
+
+        User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
         if (dto.getStatus() != null) task.setStatus(dto.getStatus());
         if (dto.getPriority() != null) task.setPriority(dto.getPriority());
         if (dto.getDueDate() != null) task.setDueDate(dto.getDueDate());
+        task.setUser(user);
 
         return toResponseDto(taskRepository.save(task));
     }
 
-    public void deleteTasks(Long id) {
+    public void deleteTasks(Long id, Authentication authentication) {
         Task task = taskRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        User requester = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (requester.getRole() != com.taskmanager.taskmanager.shared.enums.Role.ADMIN
+                && !task.getUser().getId().equals(requester.getId())) {
+            throw new AccessDeniedException("You do not have permission to delete this task");
+        }
 
         taskRepository.delete(task);
 

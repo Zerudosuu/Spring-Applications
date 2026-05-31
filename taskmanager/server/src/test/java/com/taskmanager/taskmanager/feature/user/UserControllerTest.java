@@ -131,6 +131,55 @@ class UserControllerTest {
     }
 
     @Test
+    void getUser_Returns403_WhenRegularUserReadsAnotherProfile() throws Exception {
+        // create admin user first (already done in setUp), then two regular users
+        UserRequestDTO userOne = new UserRequestDTO();
+        userOne.setName("User One");
+        userOne.setEmail("user1@email.com");
+        userOne.setPassword("123456");
+
+        UserRequestDTO userTwo = new UserRequestDTO();
+        userTwo.setName("User Two");
+        userTwo.setEmail("user2@email.com");
+        userTwo.setPassword("123456");
+
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userOne)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String userTwoResponse = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userTwo)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String token = objectMapper.readTree(mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "email": "user1@email.com",
+                                    "password": "123456"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString()).get("accessToken").asText();
+
+        long otherUserId = objectMapper.readTree(userTwoResponse).get("id").asLong();
+
+        mockMvc.perform(get("/api/users/" + otherUserId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void getAllUsers_Returns403_WithRegularUserToken() throws Exception {
         // create regular user and login
         mockMvc.perform(post("/api/users")

@@ -4,15 +4,14 @@ package com.taskmanager.taskmanager.feature.user;
 import com.taskmanager.taskmanager.feature.auth.EmailVerificationToken;
 import com.taskmanager.taskmanager.feature.auth.repository.EmailVerificationTokenRepository;
 import com.taskmanager.taskmanager.feature.auth.services.EmailService;
-import com.taskmanager.taskmanager.feature.user.dto.UserMapper;
 import com.taskmanager.taskmanager.feature.user.dto.UserRequestDTO;
 import com.taskmanager.taskmanager.feature.user.dto.UserResponseDTO;
 import com.taskmanager.taskmanager.shared.enums.Role;
 import com.taskmanager.taskmanager.shared.exception.DuplicateResourceException;
 import com.taskmanager.taskmanager.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -91,8 +90,16 @@ public class UserService {
         // return userMapper.toDTO(userRepository.save(user));
     }
 
-    public UserResponseDTO getUserById(Long id) {
+    public UserResponseDTO getUserById(Long id, String requesterEmail) {
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (requester.getRole() != Role.ADMIN && !requester.getId().equals(user.getId())) {
+            throw new AccessDeniedException("You can only view your own profile");
+        }
+
         return toResponseDTO(user);
 
         // uncomment if using mapper
@@ -121,7 +128,14 @@ public class UserService {
     }
 
     //For Triage
-    public List<UserResponseDTO> getAllUsersByRole(Role role) {
+    public List<UserResponseDTO> getAllUsersByRole(Role role, String requesterEmail) {
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (requester.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Only admins can view users by role");
+        }
+
         return userRepository.findByRole(role).stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
 

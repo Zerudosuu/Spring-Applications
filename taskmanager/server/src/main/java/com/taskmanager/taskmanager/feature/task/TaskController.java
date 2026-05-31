@@ -20,12 +20,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskController {
 
-    private final TaskRepository taskRepository;
     private final TaskService taskService;
 
     @PostMapping
-    public ResponseEntity<TaskResponseDTO> create(@RequestBody @Valid TaskRequestDTO taskRequestDTO) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(taskService.createTask(taskRequestDTO));
+    public ResponseEntity<TaskResponseDTO> create(@RequestBody @Valid TaskRequestDTO taskRequestDTO, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(taskService.createTask(taskRequestDTO, authentication));
     }
 
     @GetMapping("/{id}")
@@ -38,19 +37,20 @@ public class TaskController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<TaskResponseDTO>> getByUser(
             @PathVariable Long userId,
+            Authentication authentication,
             @RequestParam(required = false) TaskStatus status,
             @RequestParam(required = false) Priority priority) {
-        return ResponseEntity.ok(taskService.getTasksByUser(userId, status, priority));
+        return ResponseEntity.ok(taskService.getTasksByUser(userId, status, priority, authentication));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TaskResponseDTO> update(@PathVariable Long id, @RequestBody @Valid TaskRequestDTO taskRequestDTO) {
-        return ResponseEntity.ok(taskService.updateTask(id, taskRequestDTO));
+    public ResponseEntity<TaskResponseDTO> update(@PathVariable Long id, @RequestBody @Valid TaskRequestDTO taskRequestDTO, Authentication authentication) {
+        return ResponseEntity.ok(taskService.updateTask(id, taskRequestDTO, authentication));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<TaskResponseDTO> delete(@PathVariable Long id) {
-        taskService.deleteTasks(id);
+    public ResponseEntity<TaskResponseDTO> delete(@PathVariable Long id, Authentication authentication) {
+        taskService.deleteTasks(id, authentication);
 
         return ResponseEntity.noContent().build();
     }

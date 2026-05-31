@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EmailService {
 
-    @Autowired
+  
     private final JavaMailSender mailSender;
 
     public void sendVerificationEmail(String to, String token, String baseUrl) {

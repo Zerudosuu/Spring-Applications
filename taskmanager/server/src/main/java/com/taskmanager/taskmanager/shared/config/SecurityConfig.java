@@ -63,10 +63,12 @@ public class SecurityConfig {
 
                         // admin only endpoints
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users/role").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/*/role").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/api/tickets").hasAnyRole("TRIAGE", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/tickets").hasRole("ADMIN")
                         .requestMatchers("/api/tickets/**").authenticated()
                         // authenticated users — service layer handles ownership checks
                         .anyRequest().authenticated()

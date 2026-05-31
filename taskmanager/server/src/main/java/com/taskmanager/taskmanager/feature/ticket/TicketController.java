@@ -48,8 +48,8 @@ public class TicketController {
 
     // For Admin
     @GetMapping
-    public ResponseEntity<List<TicketResponseDTO>> getAll() {
-        return ResponseEntity.ok(ticketService.getAllTickets());
+    public ResponseEntity<List<TicketResponseDTO>> getAll(Authentication authentication) {
+        return ResponseEntity.ok(ticketService.getAllTickets(authentication.getName()));
     }
 
     @GetMapping("/{id}")

@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,7 +41,7 @@ public class TicketService {
     // assignee = selected from the form
 
     @Transactional
-    public TicketResponseDTO createTicket(TicketRequestDTO dto, String reporterEmail)  {
+    public TicketResponseDTO createTicket(TicketRequestDTO dto, String reporterEmail) {
 
         // temporary — remove after fixing
         System.out.println("Reporter email from token: " + reporterEmail);
@@ -71,7 +72,7 @@ public class TicketService {
 
         Ticket saved = ticketRepository.save(ticket);
 
-        eventPublisher.publishEvent(new TicketCreatedEvent(this, saved, reporter, assignee ));
+        eventPublisher.publishEvent(new TicketCreatedEvent(this, saved, reporter, assignee));
         return toResponseDTO(saved);
     }
 
@@ -98,30 +99,21 @@ public class TicketService {
     }
 
 
+    public List<TicketResponseDTO> getAllTickets(String email) {
+        User requester = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-    // TODO:─── GET ALL — ADMIN ONLY ─────────────────────────────────────
-    public List<TicketResponseDTO> getAllTickets() {
+        if (requester.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Only admins can view all tickets");
+        }
+
         return ticketRepository.findAll().stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
 
     // TODO: ─── GET BY ID ────────────────────────────────────────────────
     // only reporter, assignee, or admin can view
 
-    public TicketResponseDTO getTicketById(Long id, String email)  {
-        Ticket ticket = ticketRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket Not Found"));
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User Not Found"));
-
-        return toResponseDTO(ticket);
-
-    }
-
-    // TODO: ─── UPDATE TICKET ────────────────────────────────────────────
-    // reporter or assignee can update ticket details
-    @Transactional
-    public TicketResponseDTO updateTicket (Long id, TicketRequestDTO dto, String email) throws AccessDeniedException {
+    public TicketResponseDTO getTicketById(Long id, String email) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket Not Found"));
 
@@ -132,7 +124,29 @@ public class TicketService {
         boolean isReporter = ticket.getReporter().getId().equals(user.getId());
         boolean isAssignee = ticket.getAssignee().getId().equals(user.getId());
 
-        if(!isAdmin && !isReporter && !isAssignee) {
+        if (!isAdmin && !isReporter && !isAssignee) {
+            throw new AccessDeniedException("You cannot view this ticket");
+        }
+
+        return toResponseDTO(ticket);
+
+    }
+
+    // TODO: ─── UPDATE TICKET ────────────────────────────────────────────
+    // reporter or assignee can update ticket details
+    @Transactional
+    public TicketResponseDTO updateTicket(Long id, TicketRequestDTO dto, String email) throws AccessDeniedException {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket Not Found"));
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User Not Found"));
+
+        boolean isAdmin = user.getRole() == Role.ADMIN;
+        boolean isReporter = ticket.getReporter().getId().equals(user.getId());
+        boolean isAssignee = ticket.getAssignee().getId().equals(user.getId());
+
+        if (!isAdmin && !isReporter && !isAssignee) {
             throw new AccessDeniedException("You cannot update this ticket");
         }
 
@@ -220,7 +234,7 @@ public class TicketService {
 
     // TODO: ─── DELETE — ADMIN ONLY ──────────────────────────────────────
     @Transactional
-    public void deleteTicket (Long id, String email)  {
+    public void deleteTicket(Long id, String email) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
 
@@ -237,19 +251,21 @@ public class TicketService {
         notificationRepository.deleteByTicketId(id);
         ticketRepository.delete(ticket);
     }
+
     // TODO: ─── STATUS TRANSITION VALIDATION ────────────────────────────
     // enforces the allowed status flow:
     // OPEN → IN_PROGRESS → RESOLVED → CLOSED
     // admin can do any transition
     //StateMachine
     private void validateStatusTransition(TicketStatus currentStatus, TicketStatus newStatus, boolean isAdmin) {
-        if(isAdmin) return; // admins can do any transition
+        if (isAdmin) return; // admins can do any transition
 
         boolean valid = switch (currentStatus) {
             case OPEN -> newStatus == TicketStatus.IN_PROGRESS;
             case IN_PROGRESS -> newStatus == TicketStatus.RESOLVED;
             case RESOLVED -> newStatus == TicketStatus.CLOSED;
-            case REOPENED -> newStatus == TicketStatus.IN_PROGRESS || newStatus == TicketStatus.RESOLVED; // can move back to in progress or resolved
+            case REOPENED ->
+                    newStatus == TicketStatus.IN_PROGRESS || newStatus == TicketStatus.RESOLVED; // can move back to in progress or resolved
             case CLOSED, CANCELED -> false; // no transitions allowed from CLOSED
         };
 

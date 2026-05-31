@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,8 +35,8 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+    public ResponseEntity<UserResponseDTO> getById(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(userService.getUserById(id, authentication.getName()));
     }
 
     @GetMapping
@@ -49,8 +50,8 @@ public class UserController {
 
     @GetMapping("/role")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<UserResponseDTO>> getAllUsersByRole(@RequestParam Role role) {
-        return ResponseEntity.ok(userService.getAllUsersByRole(role));
+    public ResponseEntity<List<UserResponseDTO>> getAllUsersByRole(@RequestParam Role role, Authentication authentication) {
+        return ResponseEntity.ok(userService.getAllUsersByRole(role, authentication.getName()));
     }
 
     @DeleteMapping("/{id}")
