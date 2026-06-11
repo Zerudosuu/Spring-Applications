@@ -82,6 +82,12 @@ public class UserService {
         return toResponseDTO(saved);
     }
 
+    // Simple getter used by tests and some controllers that don't pass requester info
+    public UserResponseDTO getUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return toResponseDTO(user);
+    }
+
     public UserResponseDTO updateUserRole(Long id, Role role) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setRole(role);
@@ -183,5 +189,6 @@ public class UserService {
 
         return toResponseDTO(savedUser);
     }
+
 
 }
